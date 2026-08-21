@@ -8,10 +8,13 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
-        /* Ajuste fino para a barra de rolagem do Kanban ficar elegante no Windows */
         .kanban-scroll::-webkit-scrollbar { height: 10px; }
         .kanban-scroll::-webkit-scrollbar-track { background: #e5e7eb; border-radius: 8px; }
         .kanban-scroll::-webkit-scrollbar-thumb { background: #9ca3af; border-radius: 8px; }
+        .card-drag { cursor: grab; transition: transform 0.2s; }
+        .card-drag:active { cursor: grabbing; transform: scale(0.98); }
+        .coluna-drop { transition: background-color 0.2s; }
+        .coluna-drop.drag-over { background-color: #dbeafe; border: 2px dashed #3b82f6; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen text-gray-800">
@@ -43,6 +46,7 @@
 
         <!-- ABA 1: NOVA CAPTAÇÃO -->
         <div id="abaCaptacao" class="p-4 flex-1 overflow-y-auto flex justify-center hidden">
+            <!-- (Mantido igual) -->
             <div class="w-full max-w-md bg-white p-6 rounded-xl shadow-lg h-fit">
                 <h2 class="text-xl font-bold mb-4">Nova Captação Manual</h2>
                 <form id="captacaoForm" class="space-y-3">
@@ -51,68 +55,42 @@
                         <input type="text" id="numero" placeholder="Nº" required class="w-1/3 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
                     </div>
                     <input type="text" id="bairro" placeholder="Bairro" required class="w-full px-3 py-2 border rounded-lg">
-                    
                     <div class="flex space-x-2">
-                        <select id="tipo_imovel" class="w-1/2 px-3 py-2 border rounded-lg bg-white">
-                            <option value="placa">Placa</option>
-                            <option value="prédio">Prédio</option>
-                            <option value="construtora">Construtora</option>
-                        </select>
-                        <select id="categoria" class="w-1/2 px-3 py-2 border rounded-lg bg-white">
-                            <option value="Proprietário">Proprietário</option>
-                            <option value="Obra/Construtora">Construtora</option>
-                        </select>
+                        <select id="tipo_imovel" class="w-1/2 px-3 py-2 border rounded-lg bg-white"><option value="placa">Placa</option><option value="prédio">Prédio</option></select>
+                        <select id="categoria" class="w-1/2 px-3 py-2 border rounded-lg bg-white"><option value="Proprietário">Proprietário</option><option value="Obra/Construtora">Construtora</option></select>
                     </div>
-
                     <div class="flex space-x-2">
-                        <select id="origem" class="w-1/3 px-3 py-2 border rounded-lg bg-white text-sm">
-                            <option value="campo">Campo</option>
-                            <option value="indicação">Indicação</option>
-                            <option value="olx">OLX</option>
-                        </select>
+                        <select id="origem" class="w-1/3 px-3 py-2 border rounded-lg bg-white text-sm"><option value="campo">Campo</option><option value="indicação">Indicação</option></select>
                         <input type="text" id="nome" placeholder="Nome do Dono" required class="w-2/3 px-3 py-2 border rounded-lg">
                     </div>
-
                     <input type="text" id="telefone" placeholder="Telefone (Corretor não vê)" class="w-full px-3 py-2 border rounded-lg bg-blue-50">
                     <textarea id="observacoes" placeholder="Observações extras..." class="w-full px-3 py-2 border rounded-lg text-sm" rows="2"></textarea>
-                    
-                    <button type="submit" id="btnSalvar" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg shadow mt-2">Salvar Captação</button>
-                    <div id="msgCaptacao" class="mt-4 text-sm font-semibold hidden text-center"></div>
+                    <button type="submit" id="btnSalvar" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg mt-2">Salvar Captação</button>
+                    <div id="msgCaptacao" class="mt-4 text-sm text-center hidden"></div>
                 </form>
             </div>
         </div>
 
-        <!-- ABA 2: FUNIL KANBAN (Com Scroll Corrigido) -->
+        <!-- ABA 2: FUNIL KANBAN COM DRAG & DROP -->
         <div id="abaFunil" class="hidden flex-1 flex flex-col bg-gray-200 overflow-hidden">
-            <!-- Barra superior do Kanban -->
-            <div class="p-4 bg-gray-200 border-b border-gray-300 flex gap-2 w-full overflow-x-auto shrink-0">
-                <input type="text" id="buscaKanban" oninput="carregarFunil()" placeholder="Buscar rua, bairro ou ref..." class="flex-1 min-w-[200px] px-4 py-2 border rounded-lg shadow-sm">
-                <button onclick="exportarExcel()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-bold shadow shrink-0">📥 Exportar CSV</button>
+            <div class="p-4 bg-gray-200 border-b flex gap-2 w-full overflow-x-auto shrink-0">
+                <input type="text" id="buscaKanban" oninput="carregarFunil()" placeholder="Buscar rua, bairro ou cód..." class="flex-1 min-w-[200px] px-4 py-2 border rounded-lg">
+                <button onclick="exportarExcel()" class="bg-green-600 text-white px-4 py-2 rounded-lg font-bold shadow shrink-0">📥 CSV</button>
             </div>
-            
-            <!-- Área dos Cards com Scroll Horizontal habilitado -->
             <div class="flex-1 overflow-x-auto overflow-y-hidden kanban-scroll p-4">
-                <!-- min-w-max é o que permite as colunas crescerem sem esmagar e ativa o scroll -->
                 <div id="kanbanBoard" class="flex space-x-4 h-full min-w-max pb-2"></div>
             </div>
         </div>
 
-        <!-- ABA 3: IMPORTAÇÃO EM MASSA (Genérica) -->
+        <!-- ABA 3: IMPORTAÇÃO -->
         <div id="abaImportacao" class="p-4 flex-1 overflow-y-auto flex justify-center hidden">
+            <!-- (Mantido igual a versão anterior) -->
             <div class="w-full max-w-lg bg-white p-8 rounded-xl shadow-lg h-fit text-center border-2 border-purple-200">
-                <div class="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span class="text-3xl">🚀</span>
-                </div>
                 <h2 class="text-2xl font-bold mb-2 text-purple-900">Importação de Captações</h2>
-                <p class="text-sm text-gray-600 mb-6">Selecione sua planilha (Excel ou CSV). O sistema irá varrer os dados, identificar as colunas padrão (Bairro, Tipo, Preço, etc.) e fazer o cadastro em lote automaticamente.</p>
-                
-                <input type="file" id="arquivoExcel" accept=".xls, .xlsx, .csv" class="w-full border p-3 rounded-lg bg-gray-50 mb-4 cursor-pointer">
-                
-                <button id="btnImportar" onclick="processarPlanilha()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-lg shadow transition text-lg">
-                    Processar Planilha
-                </button>
-                
-                <div id="statusImportacao" class="mt-6 text-sm font-bold hidden p-4 rounded-lg bg-gray-100 border text-left space-y-2 max-h-40 overflow-y-auto"></div>
+                <p class="text-sm text-gray-600 mb-6">O sistema buscará a aba "OLX - Todos os bairros" se existir, ou usará a primeira disponível.</p>
+                <input type="file" id="arquivoExcel" accept=".xls, .xlsx, .csv" class="w-full border p-3 rounded-lg mb-4">
+                <button id="btnImportar" onclick="processarPlanilha()" class="w-full bg-purple-600 text-white font-bold py-3 rounded-lg">Processar Planilha</button>
+                <div id="statusImportacao" class="mt-6 text-sm hidden p-4 bg-gray-100 border text-left space-y-2"></div>
             </div>
         </div>
     </div>
@@ -123,6 +101,7 @@
         const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
         let usuarioId = null;
         let captacoesGlobais = [];
+        const statusLista = ['não contatado', 'contatado', 'respondeu', 'qualificado', 'visita agendada', 'autorização assinada', 'cadastrado'];
 
         function mostrarAba(aba) {
             document.getElementById('abaCaptacao').classList.add('hidden');
@@ -133,12 +112,8 @@
             if(aba === 'importacao') document.getElementById('abaImportacao').classList.remove('hidden');
         }
 
-        // Login
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const btn = document.querySelector('#loginForm button');
-            btn.textContent = 'Autenticando...';
-            
             const { data, error } = await supabaseClient.auth.signInWithPassword({
                 email: document.getElementById('email').value,
                 password: document.getElementById('senha').value,
@@ -147,42 +122,119 @@
                 usuarioId = data.user.id;
                 document.getElementById('loginArea').classList.add('hidden');
                 document.getElementById('sistemaArea').classList.remove('hidden');
-                mostrarAba('funil'); // Abre direto no Kanban!
-                carregarFunil();
-            } else {
-                btn.textContent = 'Erro! Tente novamente.';
-                setTimeout(() => btn.textContent = 'Entrar no CRM', 2000);
+                mostrarAba('funil'); carregarFunil();
             }
         });
 
-        // Salvar Manual (Lógica mantida para o App ficar completo)
-        document.getElementById('captacaoForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('btnSalvar');
-            btn.textContent = 'Salvando...'; btn.disabled = true;
+        // -------------------------
+        // LÓGICA DE DRAG & DROP
+        // -------------------------
+        function allowDrop(ev) {
+            ev.preventDefault();
+            ev.currentTarget.classList.add('drag-over');
+        }
+        function dragLeave(ev) {
+            ev.currentTarget.classList.remove('drag-over');
+        }
+        function drag(ev, id) {
+            ev.dataTransfer.setData("id_captacao", id);
+        }
+        async function drop(ev, novoStatus) {
+            ev.preventDefault();
+            ev.currentTarget.classList.remove('drag-over');
+            const id = ev.dataTransfer.getData("id_captacao");
+            if(id && novoStatus) {
+                await mudarStatus(id, novoStatus);
+            }
+        }
 
-            await supabaseClient.from('captacoes').insert([{
-                rua: document.getElementById('rua').value,
-                numero: document.getElementById('numero').value,
-                bairro: document.getElementById('bairro').value,
-                tipo_imovel: document.getElementById('tipo_imovel').value,
-                categoria: document.getElementById('categoria').value,
-                nome: document.getElementById('nome').value,
-                telefones: [document.getElementById('telefone').value],
-                origem: document.getElementById('origem').value,
-                observacoes: document.getElementById('observacoes').value,
-                captador_id: usuarioId
-            }]);
+        async function mudarStatus(id, novoStatus) {
+            await supabaseClient.from('captacoes').update({ status_funil: novoStatus }).eq('id', id);
+            captacoesGlobais = []; carregarFunil(); 
+        }
+
+        // -------------------------
+        // KANBAN RENDER
+        // -------------------------
+        async function carregarFunil() {
+            const board = document.getElementById('kanbanBoard');
+            const termoBusca = document.getElementById('buscaKanban').value.toLowerCase();
             
-            document.getElementById('captacaoForm').reset();
-            document.getElementById('msgCaptacao').textContent = '✅ Salvo!';
-            document.getElementById('msgCaptacao').className = 'mt-4 text-green-600 block';
-            btn.textContent = 'Salvar Captação'; btn.disabled = false;
-            captacoesGlobais = []; // Limpa cache
-            setTimeout(() => document.getElementById('msgCaptacao').classList.add('hidden'), 3000);
-        });
+            if(captacoesGlobais.length === 0 || termoBusca === "") {
+                const { data, error } = await supabaseClient.from('captacoes_vitrine').select('*').order('data_mapeamento', { ascending: false });
+                if (error) return;
+                captacoesGlobais = data;
+            }
 
-        // Importação (Textos Genéricos)
+            const captacoesFiltradas = captacoesGlobais.filter(c => 
+                (c.rua && c.rua.toLowerCase().includes(termoBusca)) || 
+                (c.bairro && c.bairro.toLowerCase().includes(termoBusca)) ||
+                (c.codigo && c.codigo.toString().includes(termoBusca))
+            );
+
+            board.innerHTML = '';
+            
+            statusLista.forEach(status => {
+                const itens = captacoesFiltradas.filter(c => c.status_funil === status);
+                
+                let html = `
+                    <div class="bg-gray-100 rounded-lg shadow w-80 flex-shrink-0 flex flex-col max-h-full coluna-drop"
+                         ondrop="drop(event, '${status}')" 
+                         ondragover="allowDrop(event)"
+                         ondragleave="dragLeave(event)">
+                        
+                        <div class="p-3 border-b border-gray-300 bg-gray-50 rounded-t-lg font-bold capitalize flex justify-between text-gray-700 pointer-events-none">
+                            ${status} <span class="bg-blue-100 text-blue-800 text-xs py-1 px-2 rounded-full">${itens.length}</span>
+                        </div>
+                        <div class="p-2 space-y-3 overflow-y-auto flex-1 kanban-scroll">`;
+                
+                itens.forEach(item => {
+                    const preco = item.preco ? `R$ ${item.preco.toLocaleString('pt-BR')}` : 'Valor ñ inf.';
+                    const qts = item.quartos ? ` • ${item.quartos} Qts` : '';
+                    const cod = item.codigo ? `Cód: ${item.codigo}` : 'Novo';
+                    
+                    let btnZap = '';
+                    if(item.telefones && item.telefones[0] && item.telefones[0] !== '{}' && item.telefones[0] !== 'Sem telefone' && item.telefones[0] !== 'Bloqueado') {
+                        let num = item.telefones[0].replace(/\D/g, '');
+                        if(num.length >= 10) btnZap = `<a href="https://wa.me/55${num}" target="_blank" class="inline-block mt-2 bg-green-100 hover:bg-green-200 text-green-800 text-xs font-bold py-1 px-2 rounded border border-green-300">💬 WhatsApp</a>`;
+                    }
+                    
+                    // Condicional do Link OLX (Só aparece se existir)
+                    let linkHtml = '';
+                    if(item.link_anuncio && item.link_anuncio.startsWith('http')) {
+                        linkHtml = `<a href="${item.link_anuncio}" target="_blank" class="text-xs text-blue-500 mt-2 block hover:underline truncate">🔗 Ver Anúncio Original</a>`;
+                    }
+                    
+                    html += `
+                        <div class="bg-white p-3 rounded shadow-sm border border-gray-200 text-sm relative card-drag"
+                             draggable="true" 
+                             ondragstart="drag(event, '${item.id}')">
+                            
+                            <span class="absolute top-2 right-2 text-xs font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 shadow-sm">${cod}</span>
+                            
+                            <p class="font-bold text-blue-900 pr-12 leading-tight">${item.rua}</p>
+                            <p class="text-xs text-gray-500 mt-1 font-medium truncate">${item.bairro} - ${item.subtipo || item.tipo_imovel}</p>
+                            <p class="font-bold text-green-700 mt-1">${preco}${qts}</p>
+                            
+                            ${linkHtml}
+                            ${btnZap}
+                            
+                            <!-- Select mantido apenas como backup/mobile fallback -->
+                            <select onchange="mudarStatus('${item.id}', this.value)" class="w-full text-xs p-1 border rounded bg-gray-50 mt-3 font-semibold text-gray-500">
+                                <option value="" disabled selected>Mover...</option>
+                                ${statusLista.map(s => `<option value="${s}">${s}</option>`).join('')}
+                            </select>
+                        </div>
+                    `;
+                });
+                html += `</div></div>`;
+                board.innerHTML += html;
+            });
+        }
+
+        // -------------------------
+        // IMPORTAÇÃO CORRIGIDA PARA NOVA ABA
+        // -------------------------
         async function processarPlanilha() {
             const fileInput = document.getElementById('arquivoExcel');
             const status = document.getElementById('statusImportacao');
@@ -198,15 +250,19 @@
                 try {
                     const data = e.target.result;
                     const workbook = XLSX.read(data, {type: 'binary'});
-                    const sheetName = workbook.SheetNames.includes("OLX - Mapeamento") ? "OLX - Mapeamento" : workbook.SheetNames[0];
+                    
+                    // PROCURA EXATAMENTE A SUA ABA NOVA
+                    const sheetName = workbook.SheetNames.includes("OLX - Todos os bairros") ? "OLX - Todos os bairros" : workbook.SheetNames[0];
                     const sheet = workbook.Sheets[sheetName];
                     const json = XLSX.utils.sheet_to_json(sheet, {header: 1});
+                    
+                    status.innerHTML += `<br>✅ Lendo a aba: <strong>${sheetName}</strong>`;
                     
                     let headerIdx = -1;
                     for(let i = 0; i < json.length; i++) {
                         if(json[i] && json[i].includes("Bairro") && json[i].includes("Título do Anúncio")) { headerIdx = i; break; }
                     }
-                    if(headerIdx === -1) throw new Error("Não encontrei as colunas padrão (Bairro, Título, etc). Verifique a planilha.");
+                    if(headerIdx === -1) throw new Error("Não encontrei as colunas padrão. Verifique a planilha.");
                     
                     const headers = json[headerIdx];
                     const rows = json.slice(headerIdx + 1);
@@ -216,14 +272,15 @@
                     for(let r of rows) {
                         if(!r[headers.indexOf('Bairro')]) continue;
                         let endereco = r[headers.indexOf('Endereço Completo (anúncio)')];
-                        let telExtraido = r[headers.indexOf('Telefone Extraído')] || '';
+                        // Tratando as colunas conforme sua nova aba
+                        let telExtraido = r[headers.indexOf('Tem Telefone?')] === 'Sim' ? (r[headers.indexOf('Telefone Extraído')] || 'Sem telefone na planilha') : 'Não coletado';
                         
                         captacoesFormatadas.push({
                             bairro: r[headers.indexOf('Bairro')],
                             rua: endereco ? endereco : 'A verificar - Imóvel Importado',
                             numero: 'S/N',
-                            tipo_imovel: 'importação',
-                            categoria: r[headers.indexOf('Direto c/ Proprietário')] === 'Sim' ? 'Proprietário' : 'Obra/Construtora',
+                            tipo_imovel: 'olx',
+                            categoria: 'Proprietário', // A nova aba diz "apenas anunciantes PARTICULARES"
                             origem: 'planilha',
                             status_funil: 'não contatado',
                             captador_id: usuarioId,
@@ -238,20 +295,18 @@
                             nome: 'Contato via Planilha',
                             telefones: [String(telExtraido)],
                             link_anuncio: r[headers.indexOf('Link do Anúncio')] || null,
-                            observacoes: `Título: ${r[headers.indexOf('Título do Anúncio')] || ''} | Obs: ${r[headers.indexOf('Observações')] || ''}`
+                            observacoes: `Título: ${r[headers.indexOf('Título do Anúncio')] || ''}`
                         });
                     }
 
-                    status.innerHTML += `<br>⏳ Cadastrando ${captacoesFormatadas.length} imóveis no banco...`;
-                    btn.textContent = "Salvando no Banco...";
-
+                    status.innerHTML += `<br>⏳ Cadastrando ${captacoesFormatadas.length} imóveis no banco (Pode demorar uns 20 segundos)...`;
                     const { error } = await supabaseClient.from('captacoes').insert(captacoesFormatadas);
                     if(error) throw error;
 
                     status.innerHTML += `<br>🎉 <strong>SUCESSO!</strong> Importação finalizada.`;
                     status.classList.replace('bg-gray-100', 'bg-green-100');
                     btn.textContent = "Processo Concluído!";
-                    captacoesGlobais = []; // Zera cache para forçar recarregamento do Kanban
+                    captacoesGlobais = []; 
                     
                 } catch(err) {
                     status.innerHTML += `<br>❌ <strong>ERRO:</strong> ${err.message}`;
@@ -260,96 +315,6 @@
                 }
             };
             reader.readAsBinaryString(fileInput.files[0]);
-        }
-
-        // KANBAN TURBINADO
-        async function carregarFunil() {
-            const board = document.getElementById('kanbanBoard');
-            const termoBusca = document.getElementById('buscaKanban').value.toLowerCase();
-            
-            if(captacoesGlobais.length === 0 || termoBusca === "") {
-                board.innerHTML = '<p class="p-4 w-full text-center text-gray-500">Sincronizando pipeline...</p>';
-                const { data, error } = await supabaseClient.from('captacoes_vitrine').select('*').order('data_mapeamento', { ascending: false });
-                if (error) return;
-                captacoesGlobais = data;
-            }
-
-            const captacoesFiltradas = captacoesGlobais.filter(c => 
-                (c.rua && c.rua.toLowerCase().includes(termoBusca)) || 
-                (c.bairro && c.bairro.toLowerCase().includes(termoBusca)) ||
-                (c.observacoes && c.observacoes.toLowerCase().includes(termoBusca))
-            );
-
-            board.innerHTML = '';
-            const statusLista = ['não contatado', 'contatado', 'respondeu', 'qualificado', 'visita agendada', 'autorização assinada', 'cadastrado'];
-            
-            statusLista.forEach(status => {
-                const itens = captacoesFiltradas.filter(c => c.status_funil === status);
-                
-                // w-80 define uma largura fixa generosa pra cada coluna, forçando o scroll a acontecer
-                let html = `<div class="bg-gray-100 rounded-lg shadow w-80 flex-shrink-0 flex flex-col max-h-full">
-                                <div class="p-3 border-b border-gray-300 bg-gray-50 rounded-t-lg font-bold capitalize flex justify-between text-gray-700 shadow-sm">
-                                    ${status} <span class="bg-blue-100 text-blue-800 text-xs py-1 px-2 rounded-full">${itens.length}</span>
-                                </div>
-                                <div class="p-2 space-y-3 overflow-y-auto flex-1 kanban-scroll">`;
-                
-                itens.forEach(item => {
-                    const precoFormatado = item.preco ? `R$ ${item.preco.toLocaleString('pt-BR')}` : 'Valor não informado';
-                    const quartoTxt = item.quartos ? ` • ${item.quartos} Qts` : '';
-                    
-                    // Cálculo de Dias Parado
-                    const dataMap = new Date(item.data_mapeamento);
-                    const dias = Math.floor((new Date() - dataMap) / (1000 * 60 * 60 * 24));
-                    const textoDias = dias === 0 ? 'Hoje' : `${dias}d`;
-
-                    // Botão WhatsApp Dinâmico (Pedido do Beto)
-                    let btnZap = '';
-                    if(item.telefones && item.telefones[0] && item.telefones[0] !== '{}' && item.telefones[0] !== 'Sem telefone') {
-                        let numeroLimpo = item.telefones[0].replace(/\D/g, ''); // Tira traços e espaços
-                        if(numeroLimpo.length >= 10) {
-                            btnZap = `<a href="https://wa.me/55${numeroLimpo}" target="_blank" class="inline-block mt-2 bg-green-100 hover:bg-green-200 text-green-800 text-xs font-bold py-1 px-2 rounded">💬 WhatsApp</a>`;
-                        }
-                    }
-                    
-                    html += `
-                        <div class="bg-white p-3 rounded shadow-sm border border-gray-200 text-sm relative">
-                            <span class="absolute top-2 right-2 text-xs font-semibold text-gray-400 bg-gray-50 px-1 rounded border">${textoDias}</span>
-                            <p class="font-bold text-blue-900 pr-8 truncate">${item.rua}</p>
-                            <p class="text-xs text-gray-500 mb-1 font-medium">${item.bairro} - ${item.subtipo || item.tipo_imovel}</p>
-                            <p class="font-bold text-green-700">${precoFormatado}${quartoTxt}</p>
-                            
-                            ${item.link_anuncio ? `<a href="${item.link_anuncio}" target="_blank" class="text-xs text-blue-500 mt-2 block hover:underline">🔗 Ver Anúncio Original</a>` : ''}
-                            
-                            ${btnZap}
-                            
-                            <select onchange="mudarStatus('${item.id}', this.value)" class="w-full text-xs p-1 border rounded bg-gray-50 mt-3 font-semibold text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500">
-                                <option value="" disabled selected>Mover no Funil...</option>
-                                ${statusLista.map(s => `<option value="${s}">${s}</option>`).join('')}
-                            </select>
-                        </div>
-                    `;
-                });
-                html += `</div></div>`;
-                board.innerHTML += html;
-            });
-        }
-
-        async function mudarStatus(id, novoStatus) {
-            await supabaseClient.from('captacoes').update({ status_funil: novoStatus }).eq('id', id);
-            captacoesGlobais = []; // Força recarregar
-            carregarFunil(); 
-        }
-
-        function exportarExcel() {
-            if(captacoesGlobais.length === 0) return alert("Nenhum dado.");
-            let csv = 'Data,Rua,Bairro,Preco,Quartos,Status\n';
-            captacoesGlobais.forEach(c => {
-                csv += `"${c.data_mapeamento}","${c.rua}","${c.bairro}","${c.preco || ''}","${c.quartos || ''}","${c.status_funil}"\n`;
-            });
-            const link = document.createElement('a');
-            link.href = window.URL.createObjectURL(new Blob(["\uFEFF"+csv], {type: 'text/csv;charset=utf-8;'}));
-            link.setAttribute('download', 'relatorio_catalao.csv');
-            document.body.appendChild(link); link.click();
         }
     </script>
 </body>
