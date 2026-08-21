@@ -15,6 +15,9 @@
         .card-drag:active { cursor: grabbing; transform: scale(0.98); }
         .coluna-drop { transition: background-color 0.2s; }
         .coluna-drop.drag-over { background-color: #dbeafe; border: 2px dashed #3b82f6; }
+        /* Esconde as setinhas chatas dos campos de número */
+        input[type="number"]::-webkit-inner-spin-button, 
+        input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen text-gray-800">
@@ -39,21 +42,31 @@
             <div class="space-x-2">
                 <button onclick="mostrarAba('captacao')" class="bg-blue-700 px-3 py-1 rounded hover:bg-blue-600 text-sm">Nova Captação</button>
                 <button onclick="mostrarAba('funil'); carregarFunil();" class="bg-blue-700 px-3 py-1 rounded hover:bg-blue-600 text-sm">Kanban</button>
-                <button onclick="mostrarAba('importacao')" class="bg-purple-700 px-3 py-1 rounded hover:bg-purple-600 text-sm font-bold">📥 Importar Dados</button>
+                <button onclick="mostrarAba('importacao')" class="bg-purple-700 px-3 py-1 rounded hover:bg-purple-600 text-sm font-bold">📥 Importar</button>
             </div>
         </div>
 
-        <!-- ABA 1: NOVA CAPTAÇÃO (Oculta para economizar espaço visual) -->
+        <!-- ABA 1: NOVA CAPTAÇÃO (Oculta) -->
         <div id="abaCaptacao" class="p-4 flex-1 overflow-y-auto flex justify-center hidden">
-            <!-- (Código mantido nos bastidores para funcionar) -->
+            <!-- (Código nos bastidores para funcionar) -->
         </div>
 
-        <!-- ABA 2: FUNIL KANBAN -->
+        <!-- ABA 2: FUNIL KANBAN COM FILTROS AVANÇADOS -->
         <div id="abaFunil" class="hidden flex-1 flex flex-col bg-gray-200 overflow-hidden">
-            <div class="p-4 bg-gray-200 border-b flex gap-2 w-full overflow-x-auto shrink-0">
-                <input type="text" id="buscaKanban" oninput="carregarFunil()" placeholder="Buscar rua, bairro ou cód..." class="flex-1 min-w-[200px] px-4 py-2 border rounded-lg">
-                <button onclick="exportarExcel()" class="bg-green-600 text-white px-4 py-2 rounded-lg font-bold shadow shrink-0">📥 CSV</button>
+            <div class="p-4 bg-gray-200 border-b flex gap-2 w-full overflow-x-auto shrink-0 items-center">
+                <input type="text" id="buscaKanban" oninput="carregarFunil()" placeholder="Buscar rua, cód..." class="flex-1 min-w-[150px] px-3 py-2 border rounded-lg shadow-sm">
+                
+                <select id="filtroBairro" onchange="carregarFunil()" class="px-3 py-2 border rounded-lg shadow-sm text-sm bg-white min-w-[140px] focus:ring-1 focus:ring-blue-500">
+                    <option value="">Todos os Bairros</option>
+                </select>
+                
+                <select id="filtroTipo" onchange="carregarFunil()" class="px-3 py-2 border rounded-lg shadow-sm text-sm bg-white min-w-[140px] focus:ring-1 focus:ring-blue-500">
+                    <option value="">Todos os Tipos</option>
+                </select>
+
+                <button onclick="exportarExcel()" class="bg-green-600 text-white px-3 py-2 rounded-lg font-bold shadow shrink-0">📥 CSV</button>
             </div>
+            
             <div class="flex-1 overflow-x-auto overflow-y-hidden kanban-scroll p-4">
                 <div id="kanbanBoard" class="flex space-x-4 h-full min-w-max pb-2"></div>
             </div>
@@ -61,14 +74,14 @@
 
         <!-- ABA 3: IMPORTAÇÃO (Oculta) -->
         <div id="abaImportacao" class="p-4 flex-1 overflow-y-auto flex justify-center hidden">
-            <!-- (Código mantido nos bastidores para funcionar) -->
+             <!-- (Código nos bastidores para funcionar) -->
         </div>
 
         <!-- ============================================== -->
-        <!-- MODAL DA FICHA COMPLETA (O "Card" Expandido)   -->
+        <!-- MODAL DA FICHA COMPLETA (AGORA EDITÁVEL)       -->
         <!-- ============================================== -->
         <div id="modalFicha" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
-            <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
                 
                 <!-- Cabeçalho do Modal -->
                 <div class="bg-blue-900 p-4 flex justify-between items-center text-white shrink-0">
@@ -82,55 +95,64 @@
                 <!-- Corpo Rolável do Modal -->
                 <div class="p-6 overflow-y-auto flex-1 bg-gray-50 flex flex-col md:flex-row gap-6">
                     
-                    <!-- Coluna Esquerda: Dados Técnicos -->
+                    <!-- Coluna Esquerda: Dados Técnicos Editáveis -->
                     <div class="flex-1 space-y-4">
-                        <div class="bg-white p-4 rounded-lg shadow-sm border">
-                            <h3 class="font-bold text-gray-700 border-b pb-2 mb-3">📍 Dados do Imóvel</h3>
-                            <div class="grid grid-cols-2 gap-2 text-sm">
-                                <div><span class="text-gray-500">Cód:</span> <span id="modCod" class="font-semibold"></span></div>
-                                <div><span class="text-gray-500">Origem:</span> <span id="modOrigem" class="font-semibold capitalize"></span></div>
-                                <div><span class="text-gray-500">Valor:</span> <span id="modPreco" class="font-bold text-green-600"></span></div>
-                                <div><span class="text-gray-500">Área:</span> <span id="modArea" class="font-semibold"></span> m²</div>
-                                <div><span class="text-gray-500">Quartos:</span> <span id="modQuartos" class="font-semibold"></span></div>
-                                <div><span class="text-gray-500">Vagas:</span> <span id="modVagas" class="font-semibold"></span></div>
-                                <div><span class="text-gray-500">Condomínio:</span> <span id="modCond" class="font-semibold"></span></div>
-                                <div><span class="text-gray-500">IPTU:</span> <span id="modIptu" class="font-semibold"></span></div>
+                        <div class="bg-white p-4 rounded-lg shadow-sm border relative">
+                            <div class="flex justify-between items-center border-b pb-2 mb-3">
+                                <h3 class="font-bold text-gray-700">📍 Dados do Imóvel</h3>
+                                <button onclick="habilitarEdicao()" id="btnEditar" class="text-xs text-blue-600 font-bold hover:underline bg-blue-50 px-2 py-1 rounded border border-blue-100">✏️ Editar Imóvel</button>
                             </div>
-                        </div>
+                            
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                                <div class="flex flex-col"><span class="text-gray-500 text-xs font-bold">Cód. Interno</span> <span id="modCod" class="py-1"></span></div>
+                                <div class="flex flex-col"><span class="text-gray-500 text-xs font-bold">Origem</span> <span id="modOrigem" class="capitalize py-1"></span></div>
+                                <div class="flex flex-col"><span class="text-gray-500 text-xs font-bold">Valor (R$)</span> <input type="number" id="edPreco" class="editavel bg-transparent font-bold text-green-700 w-full" disabled></div>
+                                <div class="flex flex-col"><span class="text-gray-500 text-xs font-bold">Área (m²)</span> <input type="number" id="edArea" class="editavel bg-transparent w-full font-semibold" disabled></div>
+                                <div class="flex flex-col"><span class="text-gray-500 text-xs font-bold">Quartos</span> <input type="number" id="edQuartos" class="editavel bg-transparent w-full font-semibold" disabled></div>
+                                <div class="flex flex-col"><span class="text-gray-500 text-xs font-bold">Banheiros</span> <input type="number" id="edBanheiros" class="editavel bg-transparent w-full font-semibold" disabled></div>
+                                <div class="flex flex-col"><span class="text-gray-500 text-xs font-bold">Vagas</span> <input type="number" id="edVagas" class="editavel bg-transparent w-full font-semibold" disabled></div>
+                                <div class="flex flex-col"><span class="text-gray-500 text-xs font-bold">Condomínio (R$)</span> <input type="number" id="edCond" class="editavel bg-transparent w-full font-semibold" disabled></div>
+                                <div class="flex flex-col"><span class="text-gray-500 text-xs font-bold">IPTU (R$)</span> <input type="number" id="edIptu" class="editavel bg-transparent w-full font-semibold" disabled></div>
+                            </div>
 
-                        <div class="bg-white p-4 rounded-lg shadow-sm border">
-                            <h3 class="font-bold text-gray-700 border-b pb-2 mb-3">📝 Observações e Links</h3>
-                            <p id="modObs" class="text-sm text-gray-600 italic bg-yellow-50 p-2 rounded"></p>
-                            <div id="modLinkArea" class="mt-3 hidden">
-                                <a id="modLink" href="#" target="_blank" class="text-blue-600 text-sm hover:underline font-semibold">🔗 Acessar Anúncio Original da OLX</a>
+                            <div class="mt-4 border-t pt-3">
+                                <span class="text-gray-500 text-xs font-bold block mb-1">Observações Gerais</span>
+                                <textarea id="edObs" class="editavel bg-transparent w-full text-sm italic text-gray-700 h-16 resize-none" disabled></textarea>
+                            </div>
+
+                            <div id="areaSalvarEdicao" class="hidden mt-4 pt-3 border-t">
+                                <button onclick="salvarEdicao()" id="btnSalvarEdicao" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded shadow transition">💾 Salvar Alterações no Banco</button>
                             </div>
                         </div>
                     </div>
 
                     <!-- Coluna Direita: Contato e IA -->
-                    <div class="flex-1 space-y-4">
-                        <div class="bg-white p-4 rounded-lg shadow-sm border border-blue-100">
+                    <div class="flex-1 flex flex-col space-y-4 min-w-[300px]">
+                        <div class="bg-white p-4 rounded-lg shadow-sm border border-blue-100 flex-1">
                             <h3 class="font-bold text-blue-900 border-b border-blue-100 pb-2 mb-3">💬 Abordagem e Contato</h3>
                             <p class="text-sm mb-1"><span class="text-gray-500">Proprietário:</span> <strong id="modNome"></strong></p>
                             <p class="text-sm mb-4"><span class="text-gray-500">Telefone:</span> <strong id="modTelefone" class="text-blue-700"></strong></p>
 
-                            <!-- Gerador de Mensagem -->
                             <div class="bg-gray-50 p-3 rounded border">
                                 <div class="flex justify-between items-center mb-2">
                                     <label class="text-xs font-bold text-gray-600 uppercase">Template de Mensagem</label>
-                                    <button class="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded font-bold hover:bg-purple-200" title="Integração N8N em breve">✨ IA (Em breve)</button>
+                                    <button class="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded font-bold hover:bg-purple-200">✨ IA (Em breve)</button>
                                 </div>
                                 <select id="tipoMensagem" onchange="atualizarMensagem()" class="w-full text-sm p-2 border rounded mb-2 bg-white focus:ring-1 focus:ring-blue-500">
                                     <option value="padrao">Abordagem Padrão (Amigável)</option>
                                     <option value="direta">Abordagem Direta (Foco na Venda)</option>
                                     <option value="investidor">Abordagem para Investidor</option>
                                 </select>
-                                <textarea id="textoMensagem" class="w-full text-sm p-2 border rounded bg-white h-28 focus:ring-1 focus:ring-blue-500"></textarea>
+                                <textarea id="textoMensagem" class="w-full text-sm p-2 border rounded bg-white h-32 focus:ring-1 focus:ring-blue-500"></textarea>
                                 
                                 <div class="flex gap-2 mt-2">
-                                    <button onclick="copiarMensagem()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-bold py-2 rounded transition">📋 Copiar</button>
-                                    <button id="btnEnviarZap" onclick="enviarWhatsApp()" class="flex-1 bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-2 rounded transition">💬 Enviar WhatsApp</button>
+                                    <button onclick="copiarMensagem()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-bold py-2 rounded">📋 Copiar</button>
+                                    <button id="btnEnviarZap" onclick="enviarWhatsApp()" class="flex-1 bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-2 rounded">💬 WhatsApp</button>
                                 </div>
+                            </div>
+                            
+                            <div id="modLinkArea" class="mt-4 text-center hidden">
+                                <a id="modLink" href="#" target="_blank" class="inline-block bg-blue-50 text-blue-600 text-xs font-bold px-3 py-2 rounded border border-blue-200 hover:bg-blue-100 transition">🔗 Ver Anúncio na OLX</a>
                             </div>
                         </div>
                     </div>
@@ -146,7 +168,7 @@
         const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
         let usuarioId = null;
         let captacoesGlobais = [];
-        let imovelAtual = null; // Guarda o imóvel que está aberto no modal
+        let imovelAtual = null; 
 
         const statusLista = ['não contatado', 'contatado', 'respondeu', 'qualificado', 'visita agendada', 'autorização assinada', 'cadastrado'];
 
@@ -160,8 +182,7 @@
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const { data, error } = await supabaseClient.auth.signInWithPassword({
-                email: document.getElementById('email').value,
-                password: document.getElementById('senha').value,
+                email: document.getElementById('email').value, password: document.getElementById('senha').value,
             });
             if (!error) {
                 usuarioId = data.user.id;
@@ -171,9 +192,7 @@
             }
         });
 
-        // -------------------------
-        // DRAG & DROP
-        // -------------------------
+        // Drag & Drop
         function allowDrop(ev) { ev.preventDefault(); ev.currentTarget.classList.add('drag-over'); }
         function dragLeave(ev) { ev.currentTarget.classList.remove('drag-over'); }
         function drag(ev, id) { ev.dataTransfer.setData("id_captacao", id); }
@@ -186,22 +205,36 @@
             }
         }
 
-        // -------------------------
-        // KANBAN RENDER
-        // -------------------------
+        // ==========================================
+        // KANBAN (COM ÍCONES E FILTROS INTELIGENTES)
+        // ==========================================
         async function carregarFunil() {
             const board = document.getElementById('kanbanBoard');
-            const termoBusca = document.getElementById('buscaKanban') ? document.getElementById('buscaKanban').value.toLowerCase() : '';
+            const tBusca = document.getElementById('buscaKanban').value.toLowerCase();
+            const fBairro = document.getElementById('filtroBairro').value;
+            const fTipo = document.getElementById('filtroTipo').value;
             
             if(captacoesGlobais.length === 0) {
                 const { data, error } = await supabaseClient.from('captacoes_vitrine').select('*').order('data_mapeamento', { ascending: false });
                 if (error) return;
                 captacoesGlobais = data;
+
+                // Popula os filtros dinamicamente
+                const selBairro = document.getElementById('filtroBairro');
+                if(selBairro.options.length === 1) {
+                    [...new Set(data.map(c => c.bairro).filter(Boolean))].sort().forEach(b => selBairro.innerHTML += `<option value="${b}">${b}</option>`);
+                }
+                const selTipo = document.getElementById('filtroTipo');
+                if(selTipo.options.length === 1) {
+                    [...new Set(data.map(c => c.subtipo || c.tipo_imovel).filter(Boolean))].sort().forEach(t => selTipo.innerHTML += `<option value="${t}">${t}</option>`);
+                }
             }
 
+            // Aplica os 3 filtros ao mesmo tempo
             const captacoesFiltradas = captacoesGlobais.filter(c => 
-                (c.rua && c.rua.toLowerCase().includes(termoBusca)) || 
-                (c.bairro && c.bairro.toLowerCase().includes(termoBusca))
+                ((c.rua && c.rua.toLowerCase().includes(tBusca)) || (c.codigo && c.codigo.toString().includes(tBusca))) &&
+                (fBairro === "" || c.bairro === fBairro) &&
+                (fTipo === "" || (c.subtipo || c.tipo_imovel) === fTipo)
             );
 
             board.innerHTML = '';
@@ -210,7 +243,7 @@
                 const itens = captacoesFiltradas.filter(c => c.status_funil === status);
                 
                 let html = `
-                    <div class="bg-gray-100 rounded-lg shadow w-80 flex-shrink-0 flex flex-col max-h-full coluna-drop"
+                    <div class="bg-gray-100 rounded-lg shadow w-[340px] flex-shrink-0 flex flex-col max-h-full coluna-drop"
                          ondrop="drop(event, '${status}')" ondragover="allowDrop(event)" ondragleave="dragLeave(event)">
                         <div class="p-3 border-b bg-gray-50 rounded-t-lg font-bold capitalize flex justify-between text-gray-700 pointer-events-none">
                             ${status} <span class="bg-blue-100 text-blue-800 text-xs py-1 px-2 rounded-full">${itens.length}</span>
@@ -218,22 +251,36 @@
                         <div class="p-2 space-y-3 overflow-y-auto flex-1 kanban-scroll">`;
                 
                 itens.forEach(item => {
-                    const preco = item.preco ? `R$ ${item.preco.toLocaleString('pt-BR')}` : 'Valor ñ inf.';
+                    const preco = item.preco ? `R$ ${item.preco.toLocaleString('pt-BR')}` : 'Valor não informado';
                     const cod = item.codigo ? `Cód: ${item.codigo}` : 'Novo';
+                    
+                    // Nova Faixa de Ícones estilo Imobiliária
+                    let iconesHtml = '';
+                    if(item.area || item.quartos || item.banheiros || item.vagas) {
+                        iconesHtml = `
+                            <div class="flex items-center gap-3 text-xs text-gray-600 mt-2 mb-3 bg-gray-50 p-1.5 rounded border border-gray-100 justify-center font-medium">
+                                ${item.area ? `<div title="Área">📐 ${item.area}m²</div>` : ''}
+                                ${item.quartos ? `<div title="Quartos">🛏️ ${item.quartos}</div>` : ''}
+                                ${item.banheiros ? `<div title="Banheiros">🚿 ${item.banheiros}</div>` : ''}
+                                ${item.vagas ? `<div title="Vagas">🚗 ${item.vagas}</div>` : ''}
+                            </div>
+                        `;
+                    }
                     
                     html += `
                         <div class="bg-white p-3 rounded shadow-sm border border-gray-200 text-sm relative card-drag hover:border-blue-400 transition"
-                             draggable="true" ondragstart="drag(event, '${item.id}')">
+                             draggable="true" ondragstart="drag(event, '${item.id}')" onclick="abrirFicha('${item.id}')">
                             <span class="absolute top-2 right-2 text-xs font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 shadow-sm">${cod}</span>
                             
                             <p class="font-bold text-blue-900 pr-12 truncate leading-tight">${item.rua}</p>
                             <p class="text-xs text-gray-500 mt-1 truncate">${item.bairro} - ${item.subtipo || item.tipo_imovel}</p>
-                            <p class="font-bold text-green-700 mt-1 mb-3">${preco}</p>
+                            <p class="font-bold text-green-700 mt-1 text-base">${preco}</p>
                             
-                            <!-- NOVO BOTÃO PARA ABRIR A FICHA COMPLETA -->
-                            <button onclick="abrirFicha('${item.id}')" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-bold py-1.5 rounded text-xs transition flex justify-center items-center gap-1">
-                                🔍 Abrir Ficha Completa
-                            </button>
+                            ${iconesHtml}
+                            
+                            <div class="text-center text-xs text-blue-500 font-semibold bg-blue-50 py-1 rounded cursor-pointer hover:bg-blue-100">
+                                Clique para abrir a ficha
+                            </div>
                         </div>
                     `;
                 });
@@ -243,96 +290,127 @@
         }
 
         // ==========================================
-        // LÓGICA DO MODAL (FICHA) E MENSAGENS
+        // LÓGICA DO MODAL EDITÁVEL
         // ==========================================
         function abrirFicha(id) {
             imovelAtual = captacoesGlobais.find(c => c.id === id);
             if(!imovelAtual) return;
 
-            // Preenche Cabeçalho
+            // Reset do estado visual (Modo Leitura)
+            document.querySelectorAll('.editavel').forEach(el => { 
+                el.disabled = true; 
+                el.classList.remove('border', 'bg-white', 'px-2', 'py-1', 'shadow-inner'); 
+                el.classList.add('bg-transparent');
+            });
+            document.getElementById('btnEditar').classList.remove('hidden');
+            document.getElementById('areaSalvarEdicao').classList.add('hidden');
+
+            // Preenchimento
             document.getElementById('modalTitulo').textContent = imovelAtual.rua;
             document.getElementById('modalSubtitulo').textContent = `${imovelAtual.bairro} - ${imovelAtual.subtipo || imovelAtual.tipo_imovel}`;
-            
-            // Preenche Dados Técnicos
             document.getElementById('modCod').textContent = imovelAtual.codigo || '-';
             document.getElementById('modOrigem').textContent = imovelAtual.origem || '-';
-            document.getElementById('modPreco').textContent = imovelAtual.preco ? `R$ ${imovelAtual.preco.toLocaleString('pt-BR')}` : 'Não inf.';
-            document.getElementById('modArea').textContent = imovelAtual.area || '-';
-            document.getElementById('modQuartos').textContent = imovelAtual.quartos || '-';
-            document.getElementById('modVagas').textContent = imovelAtual.vagas || '-';
-            document.getElementById('modCond').textContent = imovelAtual.condominio ? `R$ ${imovelAtual.condominio}` : '-';
-            document.getElementById('modIptu').textContent = imovelAtual.iptu ? `R$ ${imovelAtual.iptu}` : '-';
-            document.getElementById('modObs').textContent = imovelAtual.observacoes || 'Sem observações cadastradas.';
             
-            // Preenche Link
+            // Preenche os Inputs Editáveis
+            document.getElementById('edPreco').value = imovelAtual.preco || '';
+            document.getElementById('edArea').value = imovelAtual.area || '';
+            document.getElementById('edQuartos').value = imovelAtual.quartos || '';
+            document.getElementById('edBanheiros').value = imovelAtual.banheiros || '';
+            document.getElementById('edVagas').value = imovelAtual.vagas || '';
+            document.getElementById('edCond').value = imovelAtual.condominio || '';
+            document.getElementById('edIptu').value = imovelAtual.iptu || '';
+            document.getElementById('edObs').value = imovelAtual.observacoes || '';
+
+            // Link OLX
             if(imovelAtual.link_anuncio && imovelAtual.link_anuncio.startsWith('http')) {
                 document.getElementById('modLinkArea').classList.remove('hidden');
                 document.getElementById('modLink').href = imovelAtual.link_anuncio;
-            } else {
-                document.getElementById('modLinkArea').classList.add('hidden');
-            }
+            } else { document.getElementById('modLinkArea').classList.add('hidden'); }
 
-            // Preenche Contato
+            // Contato
             document.getElementById('modNome').textContent = imovelAtual.nome;
             let tel = (imovelAtual.telefones && imovelAtual.telefones[0] !== '{}') ? imovelAtual.telefones[0] : 'Sem telefone';
             document.getElementById('modTelefone').textContent = tel;
 
-            // Desativa botão de WhatsApp se não tiver telefone
             const btnZap = document.getElementById('btnEnviarZap');
             if(tel === 'Sem telefone' || tel === 'Bloqueado') {
-                btnZap.classList.replace('bg-green-500', 'bg-gray-400');
-                btnZap.disabled = true;
-                btnZap.textContent = '❌ Sem Telefone';
+                btnZap.classList.replace('bg-green-500', 'bg-gray-400'); btnZap.disabled = true; btnZap.textContent = '❌ Sem Telefone';
             } else {
-                btnZap.classList.replace('bg-gray-400', 'bg-green-500');
-                btnZap.disabled = false;
-                btnZap.textContent = '💬 Enviar WhatsApp';
+                btnZap.classList.replace('bg-gray-400', 'bg-green-500'); btnZap.disabled = false; btnZap.textContent = '💬 WhatsApp';
             }
 
-            // Gera a mensagem inicial e abre o modal
             document.getElementById('tipoMensagem').value = 'padrao';
             atualizarMensagem();
             document.getElementById('modalFicha').classList.remove('hidden');
         }
 
-        function fecharModal() {
-            document.getElementById('modalFicha').classList.add('hidden');
+        function fecharModal() { document.getElementById('modalFicha').classList.add('hidden'); }
+
+        function habilitarEdicao() {
+            document.querySelectorAll('.editavel').forEach(el => { 
+                el.disabled = false; 
+                el.classList.remove('bg-transparent');
+                el.classList.add('border', 'bg-white', 'px-2', 'py-1', 'shadow-inner', 'rounded'); 
+            });
+            document.getElementById('btnEditar').classList.add('hidden');
+            document.getElementById('areaSalvarEdicao').classList.remove('hidden');
+            document.getElementById('edPreco').focus();
         }
 
-        // GERAÇÃO DE TEMPLATES (A estrutura da Fase 2 para IA)
+        async function salvarEdicao() {
+            const btn = document.getElementById('btnSalvarEdicao');
+            btn.textContent = 'Salvando...'; btn.disabled = true;
+            
+            const limpaNum = (val) => val ? parseFloat(val) : null;
+            
+            const updates = {
+                preco: limpaNum(document.getElementById('edPreco').value),
+                area: limpaNum(document.getElementById('edArea').value),
+                quartos: limpaNum(document.getElementById('edQuartos').value),
+                banheiros: limpaNum(document.getElementById('edBanheiros').value),
+                vagas: limpaNum(document.getElementById('edVagas').value),
+                condominio: limpaNum(document.getElementById('edCond').value),
+                iptu: limpaNum(document.getElementById('edIptu').value),
+                observacoes: document.getElementById('edObs').value
+            };
+
+            const { error } = await supabaseClient.from('captacoes').update(updates).eq('id', imovelAtual.id);
+            
+            if(!error) {
+                captacoesGlobais = []; // Limpa cache pra forçar busca nova no banco
+                await carregarFunil();
+                fecharModal();
+            } else {
+                alert('Erro ao salvar no banco: ' + error.message);
+            }
+            btn.textContent = '💾 Salvar Alterações no Banco'; btn.disabled = false;
+        }
+
+        // IA Mensagens
         function atualizarMensagem() {
             if(!imovelAtual) return;
             const tipo = document.getElementById('tipoMensagem').value;
             const bairro = imovelAtual.bairro || 'seu bairro';
             const subtipo = imovelAtual.subtipo || imovelAtual.tipo_imovel || 'imóvel';
-            const preco = imovelAtual.preco ? ` de R$ ${imovelAtual.preco.toLocaleString('pt-BR')}` : '';
+            const preco = document.getElementById('edPreco').value ? ` de R$ ${parseFloat(document.getElementById('edPreco').value).toLocaleString('pt-BR')}` : '';
             
             let texto = "";
-
-            if(tipo === 'padrao') {
-                texto = `Olá! Tudo bem?\n\nVi o seu anúncio referente ao ${subtipo} no bairro ${bairro}${preco}. Ele ainda está disponível?\n\nSou corretor parceiro da Imobiliária Catalão e tenho clientes buscando exatamente esse perfil na região. Podemos conversar sobre uma possível parceria de venda?`;
-            } else if (tipo === 'direta') {
-                texto = `Olá, bom dia! Vi o anúncio do ${subtipo} em ${bairro}.\n\nTrabalho na Imobiliária Catalão e temos forte atuação nessa região. Gostaria de agendar uma visita rápida para conhecer o imóvel e apresentar aos nossos clientes ativos. Qual o melhor dia para você?`;
-            } else if (tipo === 'investidor') {
-                texto = `Olá! Tenho clientes investidores monitorando oportunidades em ${bairro} e o seu ${subtipo} chamou a atenção.\n\nSou da Imobiliária Catalão, o imóvel ainda está disponível para negociação?`;
-            }
-
+            if(tipo === 'padrao') texto = `Olá! Tudo bem?\n\nVi o seu anúncio referente ao ${subtipo} no bairro ${bairro}${preco}. Ele ainda está disponível?\n\nSou corretor parceiro da Imobiliária Catalão e tenho clientes buscando exatamente esse perfil na região. Podemos conversar sobre uma possível parceria de venda?`;
+            else if (tipo === 'direta') texto = `Olá, bom dia! Vi o anúncio do ${subtipo} em ${bairro}.\n\nTrabalho na Imobiliária Catalão e temos forte atuação nessa região. Gostaria de agendar uma visita rápida para conhecer o imóvel e apresentar aos nossos clientes ativos. Qual o melhor dia para você?`;
+            else if (tipo === 'investidor') texto = `Olá! Tenho clientes investidores monitorando oportunidades em ${bairro} e o seu ${subtipo} chamou a atenção.\n\nSou da Imobiliária Catalão, o imóvel ainda está disponível para negociação?`;
+            
             document.getElementById('textoMensagem').value = texto;
         }
 
         function copiarMensagem() {
-            const txt = document.getElementById('textoMensagem').value;
-            navigator.clipboard.writeText(txt);
-            alert('✅ Mensagem copiada para a área de transferência!');
+            navigator.clipboard.writeText(document.getElementById('textoMensagem').value);
+            alert('✅ Mensagem copiada!');
         }
 
         function enviarWhatsApp() {
             const txt = encodeURIComponent(document.getElementById('textoMensagem').value);
             let num = imovelAtual.telefones[0].replace(/\D/g, '');
-            if(num.length < 10) return alert("Número de telefone inválido.");
-            
-            // Link universal do WhatsApp
-            window.open(`https://wa.me/55${num}?text=${txt}`, '_blank');
+            if(num.length >= 10) window.open(`https://wa.me/55${num}?text=${txt}`, '_blank');
         }
     </script>
 </body>
