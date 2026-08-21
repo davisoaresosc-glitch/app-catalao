@@ -15,7 +15,6 @@
         .card-drag:active { cursor: grabbing; transform: scale(0.98); }
         .coluna-drop { transition: background-color 0.2s; }
         .coluna-drop.drag-over { background-color: #dbeafe; border: 2px dashed #3b82f6; }
-        /* Esconde as setinhas chatas dos campos de número */
         input[type="number"]::-webkit-inner-spin-button, 
         input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
@@ -46,44 +45,50 @@
             </div>
         </div>
 
-        <!-- ABA 1: NOVA CAPTAÇÃO (Oculta) -->
-        <div id="abaCaptacao" class="p-4 flex-1 overflow-y-auto flex justify-center hidden">
-            <!-- (Código nos bastidores para funcionar) -->
-        </div>
-
-        <!-- ABA 2: FUNIL KANBAN COM FILTROS AVANÇADOS -->
+        <!-- ABA 2: FUNIL KANBAN COM NOVO LAYOUT DE FILTROS -->
         <div id="abaFunil" class="hidden flex-1 flex flex-col bg-gray-200 overflow-hidden">
-            <div class="p-4 bg-gray-200 border-b flex gap-2 w-full overflow-x-auto shrink-0 items-center">
-                <input type="text" id="buscaKanban" oninput="carregarFunil()" placeholder="Buscar rua, cód..." class="flex-1 min-w-[150px] px-3 py-2 border rounded-lg shadow-sm">
+            
+            <!-- Nova Área de Busca e Filtros (2 Linhas) -->
+            <div class="p-4 bg-gray-200 border-b border-gray-300 flex flex-col gap-3 shrink-0">
+                <!-- Linha 1: Pesquisa Principal -->
+                <div class="w-full">
+                    <input type="text" id="buscaKanban" oninput="carregarFunil()" placeholder="Pesquisa rápida (Rua, Código, Bairro, Observações)..." class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
                 
-                <select id="filtroBairro" onchange="carregarFunil()" class="px-3 py-2 border rounded-lg shadow-sm text-sm bg-white min-w-[140px] focus:ring-1 focus:ring-blue-500">
-                    <option value="">Todos os Bairros</option>
-                </select>
-                
-                <select id="filtroTipo" onchange="carregarFunil()" class="px-3 py-2 border rounded-lg shadow-sm text-sm bg-white min-w-[140px] focus:ring-1 focus:ring-blue-500">
-                    <option value="">Todos os Tipos</option>
-                </select>
+                <!-- Linha 2: Filtros Avançados -->
+                <div class="flex gap-2 w-full overflow-x-auto items-center text-sm">
+                    <span class="font-bold text-gray-500 text-xs uppercase tracking-wider mr-2 hidden md:inline">Filtros:</span>
+                    
+                    <select id="filtroBairro" onchange="carregarFunil()" class="px-3 py-1.5 border border-gray-300 rounded-lg shadow-sm bg-white min-w-[150px] focus:ring-1 focus:ring-blue-500">
+                        <option value="">Todos os Bairros</option>
+                    </select>
+                    
+                    <select id="filtroTipo" onchange="carregarFunil()" class="px-3 py-1.5 border border-gray-300 rounded-lg shadow-sm bg-white min-w-[150px] focus:ring-1 focus:ring-blue-500">
+                        <option value="">Todos os Tipos</option>
+                    </select>
 
-                <button onclick="exportarExcel()" class="bg-green-600 text-white px-3 py-2 rounded-lg font-bold shadow shrink-0">📥 CSV</button>
+                    <div class="flex-1"></div> <!-- Empurra o botão CSV para a direita -->
+                    
+                    <button onclick="exportarExcel()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded-lg font-bold shadow shrink-0 transition">📥 Exportar CSV</button>
+                </div>
             </div>
             
+            <!-- Quadro Kanban -->
             <div class="flex-1 overflow-x-auto overflow-y-hidden kanban-scroll p-4">
                 <div id="kanbanBoard" class="flex space-x-4 h-full min-w-max pb-2"></div>
             </div>
         </div>
 
-        <!-- ABA 3: IMPORTAÇÃO (Oculta) -->
-        <div id="abaImportacao" class="p-4 flex-1 overflow-y-auto flex justify-center hidden">
-             <!-- (Código nos bastidores para funcionar) -->
-        </div>
+        <!-- ABAS SECUNDÁRIAS (Ocultas para economizar espaço de código) -->
+        <div id="abaCaptacao" class="p-4 flex-1 overflow-y-auto flex justify-center hidden"></div>
+        <div id="abaImportacao" class="p-4 flex-1 overflow-y-auto flex justify-center hidden"></div>
 
         <!-- ============================================== -->
-        <!-- MODAL DA FICHA COMPLETA (AGORA EDITÁVEL)       -->
+        <!-- MODAL DA FICHA COMPLETA (TOTALMENTE EDITÁVEL)  -->
         <!-- ============================================== -->
         <div id="modalFicha" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
             <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
                 
-                <!-- Cabeçalho do Modal -->
                 <div class="bg-blue-900 p-4 flex justify-between items-center text-white shrink-0">
                     <div>
                         <h2 id="modalTitulo" class="text-xl font-bold">Rua Exemplo, 123</h2>
@@ -92,20 +97,27 @@
                     <button onclick="fecharModal()" class="text-white hover:text-red-400 font-bold text-2xl px-2">&times;</button>
                 </div>
 
-                <!-- Corpo Rolável do Modal -->
                 <div class="p-6 overflow-y-auto flex-1 bg-gray-50 flex flex-col md:flex-row gap-6">
                     
-                    <!-- Coluna Esquerda: Dados Técnicos Editáveis -->
+                    <!-- Lado Esquerdo: Dados Técnicos -->
                     <div class="flex-1 space-y-4">
                         <div class="bg-white p-4 rounded-lg shadow-sm border relative">
                             <div class="flex justify-between items-center border-b pb-2 mb-3">
                                 <h3 class="font-bold text-gray-700">📍 Dados do Imóvel</h3>
-                                <button onclick="habilitarEdicao()" id="btnEditar" class="text-xs text-blue-600 font-bold hover:underline bg-blue-50 px-2 py-1 rounded border border-blue-100">✏️ Editar Imóvel</button>
+                                <button onclick="habilitarEdicao()" id="btnEditar" class="text-xs text-blue-600 font-bold hover:underline bg-blue-50 px-2 py-1 rounded border border-blue-100">✏️ Editar Ficha</button>
                             </div>
                             
                             <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                                <div class="flex flex-col"><span class="text-gray-500 text-xs font-bold">Cód. Interno</span> <span id="modCod" class="py-1"></span></div>
-                                <div class="flex flex-col"><span class="text-gray-500 text-xs font-bold">Origem</span> <span id="modOrigem" class="capitalize py-1"></span></div>
+                                <div class="flex flex-col"><span class="text-gray-500 text-xs font-bold">Cód. Interno</span> <span id="modCod" class="py-1 font-semibold"></span></div>
+                                <div class="flex flex-col"><span class="text-gray-500 text-xs font-bold">Origem</span> 
+                                    <!-- Origem agora é Editável -->
+                                    <select id="edOrigem" class="editavel bg-transparent py-1 w-full text-sm font-semibold capitalize" disabled>
+                                        <option value="olx">OLX</option>
+                                        <option value="planilha">Planilha</option>
+                                        <option value="campo">Campo</option>
+                                        <option value="indicação">Indicação</option>
+                                    </select>
+                                </div>
                                 <div class="flex flex-col"><span class="text-gray-500 text-xs font-bold">Valor (R$)</span> <input type="number" id="edPreco" class="editavel bg-transparent font-bold text-green-700 w-full" disabled></div>
                                 <div class="flex flex-col"><span class="text-gray-500 text-xs font-bold">Área (m²)</span> <input type="number" id="edArea" class="editavel bg-transparent w-full font-semibold" disabled></div>
                                 <div class="flex flex-col"><span class="text-gray-500 text-xs font-bold">Quartos</span> <input type="number" id="edQuartos" class="editavel bg-transparent w-full font-semibold" disabled></div>
@@ -121,17 +133,25 @@
                             </div>
 
                             <div id="areaSalvarEdicao" class="hidden mt-4 pt-3 border-t">
-                                <button onclick="salvarEdicao()" id="btnSalvarEdicao" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded shadow transition">💾 Salvar Alterações no Banco</button>
+                                <button onclick="salvarEdicao()" id="btnSalvarEdicao" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded shadow transition">💾 Salvar Alterações</button>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Coluna Direita: Contato e IA -->
+                    <!-- Lado Direito: Contato e IA -->
                     <div class="flex-1 flex flex-col space-y-4 min-w-[300px]">
                         <div class="bg-white p-4 rounded-lg shadow-sm border border-blue-100 flex-1">
                             <h3 class="font-bold text-blue-900 border-b border-blue-100 pb-2 mb-3">💬 Abordagem e Contato</h3>
-                            <p class="text-sm mb-1"><span class="text-gray-500">Proprietário:</span> <strong id="modNome"></strong></p>
-                            <p class="text-sm mb-4"><span class="text-gray-500">Telefone:</span> <strong id="modTelefone" class="text-blue-700"></strong></p>
+                            
+                            <!-- Nome e Telefone agora são editáveis! -->
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="text-gray-500 text-sm font-bold w-20">Contato:</span>
+                                <input type="text" id="edNome" class="editavel bg-transparent font-bold text-gray-800 text-sm flex-1" disabled>
+                            </div>
+                            <div class="flex items-center gap-2 mb-4">
+                                <span class="text-gray-500 text-sm font-bold w-20">Telefone:</span>
+                                <input type="text" id="edTelefone" class="editavel bg-transparent font-bold text-blue-700 text-sm flex-1" disabled>
+                            </div>
 
                             <div class="bg-gray-50 p-3 rounded border">
                                 <div class="flex justify-between items-center mb-2">
@@ -170,7 +190,8 @@
         let captacoesGlobais = [];
         let imovelAtual = null; 
 
-        const statusLista = ['não contatado', 'contatado', 'respondeu', 'qualificado', 'visita agendada', 'autorização assinada', 'cadastrado'];
+        // ATUALIZAÇÃO DA LISTA DE STATUS (Nova coluna: Visita realizada)
+        const statusLista = ['não contatado', 'contatado', 'respondeu', 'qualificado', 'visita agendada', 'visita realizada', 'cadastrado'];
 
         function mostrarAba(aba) {
             document.getElementById('abaCaptacao').classList.add('hidden');
@@ -219,7 +240,6 @@
                 if (error) return;
                 captacoesGlobais = data;
 
-                // Popula os filtros dinamicamente
                 const selBairro = document.getElementById('filtroBairro');
                 if(selBairro.options.length === 1) {
                     [...new Set(data.map(c => c.bairro).filter(Boolean))].sort().forEach(b => selBairro.innerHTML += `<option value="${b}">${b}</option>`);
@@ -230,9 +250,8 @@
                 }
             }
 
-            // Aplica os 3 filtros ao mesmo tempo
             const captacoesFiltradas = captacoesGlobais.filter(c => 
-                ((c.rua && c.rua.toLowerCase().includes(tBusca)) || (c.codigo && c.codigo.toString().includes(tBusca))) &&
+                ((c.rua && c.rua.toLowerCase().includes(tBusca)) || (c.codigo && c.codigo.toString().includes(tBusca)) || (c.observacoes && c.observacoes.toLowerCase().includes(tBusca))) &&
                 (fBairro === "" || c.bairro === fBairro) &&
                 (fTipo === "" || (c.subtipo || c.tipo_imovel) === fTipo)
             );
@@ -254,7 +273,6 @@
                     const preco = item.preco ? `R$ ${item.preco.toLocaleString('pt-BR')}` : 'Valor não informado';
                     const cod = item.codigo ? `Cód: ${item.codigo}` : 'Novo';
                     
-                    // Nova Faixa de Ícones estilo Imobiliária
                     let iconesHtml = '';
                     if(item.area || item.quartos || item.banheiros || item.vagas) {
                         iconesHtml = `
@@ -278,8 +296,8 @@
                             
                             ${iconesHtml}
                             
-                            <div class="text-center text-xs text-blue-500 font-semibold bg-blue-50 py-1 rounded cursor-pointer hover:bg-blue-100">
-                                Clique para abrir a ficha
+                            <div class="text-center text-xs text-blue-500 font-semibold bg-blue-50 py-1 rounded cursor-pointer hover:bg-blue-100 transition">
+                                🔍 Clique para abrir a ficha
                             </div>
                         </div>
                     `;
@@ -290,13 +308,13 @@
         }
 
         // ==========================================
-        // LÓGICA DO MODAL EDITÁVEL
+        // LÓGICA DO MODAL EDITÁVEL (COM MANUTENÇÃO DE ESTADO)
         // ==========================================
         function abrirFicha(id) {
             imovelAtual = captacoesGlobais.find(c => c.id === id);
             if(!imovelAtual) return;
 
-            // Reset do estado visual (Modo Leitura)
+            // Modo Leitura
             document.querySelectorAll('.editavel').forEach(el => { 
                 el.disabled = true; 
                 el.classList.remove('border', 'bg-white', 'px-2', 'py-1', 'shadow-inner'); 
@@ -309,9 +327,14 @@
             document.getElementById('modalTitulo').textContent = imovelAtual.rua;
             document.getElementById('modalSubtitulo').textContent = `${imovelAtual.bairro} - ${imovelAtual.subtipo || imovelAtual.tipo_imovel}`;
             document.getElementById('modCod').textContent = imovelAtual.codigo || '-';
-            document.getElementById('modOrigem').textContent = imovelAtual.origem || '-';
             
-            // Preenche os Inputs Editáveis
+            // Novos campos editáveis
+            document.getElementById('edOrigem').value = imovelAtual.origem || 'olx';
+            document.getElementById('edNome').value = imovelAtual.nome || '';
+            let tel = (imovelAtual.telefones && imovelAtual.telefones[0] !== '{}') ? imovelAtual.telefones[0] : '';
+            document.getElementById('edTelefone').value = tel;
+
+            // Dados numéricos
             document.getElementById('edPreco').value = imovelAtual.preco || '';
             document.getElementById('edArea').value = imovelAtual.area || '';
             document.getElementById('edQuartos').value = imovelAtual.quartos || '';
@@ -327,13 +350,8 @@
                 document.getElementById('modLink').href = imovelAtual.link_anuncio;
             } else { document.getElementById('modLinkArea').classList.add('hidden'); }
 
-            // Contato
-            document.getElementById('modNome').textContent = imovelAtual.nome;
-            let tel = (imovelAtual.telefones && imovelAtual.telefones[0] !== '{}') ? imovelAtual.telefones[0] : 'Sem telefone';
-            document.getElementById('modTelefone').textContent = tel;
-
             const btnZap = document.getElementById('btnEnviarZap');
-            if(tel === 'Sem telefone' || tel === 'Bloqueado') {
+            if(tel === '' || tel === 'Bloqueado') {
                 btnZap.classList.replace('bg-green-500', 'bg-gray-400'); btnZap.disabled = true; btnZap.textContent = '❌ Sem Telefone';
             } else {
                 btnZap.classList.replace('bg-gray-400', 'bg-green-500'); btnZap.disabled = false; btnZap.textContent = '💬 WhatsApp';
@@ -359,7 +377,7 @@
 
         async function salvarEdicao() {
             const btn = document.getElementById('btnSalvarEdicao');
-            btn.textContent = 'Salvando...'; btn.disabled = true;
+            btn.textContent = '⏳ Salvando...'; btn.disabled = true;
             
             const limpaNum = (val) => val ? parseFloat(val) : null;
             
@@ -371,19 +389,41 @@
                 vagas: limpaNum(document.getElementById('edVagas').value),
                 condominio: limpaNum(document.getElementById('edCond').value),
                 iptu: limpaNum(document.getElementById('edIptu').value),
-                observacoes: document.getElementById('edObs').value
+                observacoes: document.getElementById('edObs').value,
+                origem: document.getElementById('edOrigem').value,
+                nome: document.getElementById('edNome').value,
+                telefones: [document.getElementById('edTelefone').value]
             };
 
             const { error } = await supabaseClient.from('captacoes').update(updates).eq('id', imovelAtual.id);
             
             if(!error) {
-                captacoesGlobais = []; // Limpa cache pra forçar busca nova no banco
-                await carregarFunil();
-                fecharModal();
+                // Atualiza o card de fundo sem fechar a janela!
+                captacoesGlobais = []; 
+                carregarFunil();
+                
+                // Feedback visual de sucesso
+                btn.textContent = '✅ Salvo com sucesso!';
+                btn.classList.replace('bg-blue-600', 'bg-green-600');
+                
+                // Trava os campos novamente após 1.5 segundos
+                setTimeout(() => {
+                    document.querySelectorAll('.editavel').forEach(el => { 
+                        el.disabled = true; 
+                        el.classList.remove('border', 'bg-white', 'px-2', 'py-1', 'shadow-inner', 'rounded'); 
+                        el.classList.add('bg-transparent');
+                    });
+                    btn.textContent = '💾 Salvar Alterações';
+                    btn.classList.replace('bg-green-600', 'bg-blue-600');
+                    btn.disabled = false;
+                    document.getElementById('areaSalvarEdicao').classList.add('hidden');
+                    document.getElementById('btnEditar').classList.remove('hidden');
+                }, 1500);
+
             } else {
                 alert('Erro ao salvar no banco: ' + error.message);
+                btn.textContent = '💾 Salvar Alterações'; btn.disabled = false;
             }
-            btn.textContent = '💾 Salvar Alterações no Banco'; btn.disabled = false;
         }
 
         // IA Mensagens
@@ -409,7 +449,7 @@
 
         function enviarWhatsApp() {
             const txt = encodeURIComponent(document.getElementById('textoMensagem').value);
-            let num = imovelAtual.telefones[0].replace(/\D/g, '');
+            let num = document.getElementById('edTelefone').value.replace(/\D/g, '');
             if(num.length >= 10) window.open(`https://wa.me/55${num}?text=${txt}`, '_blank');
         }
     </script>
