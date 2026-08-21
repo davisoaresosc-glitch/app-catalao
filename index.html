@@ -7,113 +7,126 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-gray-100 min-h-screen p-4 flex flex-col items-center">
+<body class="bg-gray-100 min-h-screen text-gray-800">
 
-    <!-- ÁREA DE LOGIN (Some quando entra) -->
-    <div id="loginArea" class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md text-center mt-10">
-        <h1 class="text-3xl font-bold text-blue-900 mb-6">Sistema Catalão</h1>
-        <form id="loginForm" class="space-y-4">
-            <input type="email" id="email" placeholder="Seu E-mail" required class="w-full px-4 py-2 border rounded-lg">
-            <input type="password" id="senha" placeholder="Sua Senha" required class="w-full px-4 py-2 border rounded-lg">
-            <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">Entrar</button>
-        </form>
-        <div id="mensagem" class="mt-4 text-sm font-semibold hidden"></div>
+    <!-- LOGIN -->
+    <div id="loginArea" class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md text-center">
+            <h1 class="text-3xl font-bold text-blue-900 mb-6">Sistema Catalão</h1>
+            <form id="loginForm" class="space-y-4">
+                <input type="email" id="email" placeholder="Seu E-mail" required class="w-full px-4 py-2 border rounded-lg">
+                <input type="password" id="senha" placeholder="Sua Senha" required class="w-full px-4 py-2 border rounded-lg">
+                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">Entrar</button>
+            </form>
+            <div id="mensagem" class="mt-4 text-sm font-semibold hidden"></div>
+        </div>
     </div>
 
-    <!-- PAINEL DO CAPTADOR (Escondido até logar) -->
-    <div id="dashboardArea" class="hidden w-full max-w-md bg-white p-6 rounded-xl shadow-lg mt-4">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-bold text-gray-800">Nova Captação</h2>
-            <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Logado</span>
+    <!-- SISTEMA LOGADO -->
+    <div id="sistemaArea" class="hidden flex flex-col h-screen">
+        <!-- Navegação Topo -->
+        <div class="bg-blue-900 text-white p-4 shadow-md flex justify-between items-center">
+            <h1 class="text-xl font-bold">Catalão CRM</h1>
+            <div class="space-x-2">
+                <button onclick="mostrarAba('captacao')" class="bg-blue-700 px-3 py-1 rounded hover:bg-blue-600 text-sm">Nova Captação</button>
+                <button onclick="mostrarAba('funil'); carregarFunil();" class="bg-blue-700 px-3 py-1 rounded hover:bg-blue-600 text-sm">Funil Kanban</button>
+            </div>
         </div>
-        
-        <form id="captacaoForm" class="space-y-3">
-            <div class="flex space-x-2">
-                <input type="text" id="rua" placeholder="Rua" required class="w-2/3 px-3 py-2 border rounded-lg">
-                <input type="text" id="numero" placeholder="Nº" required class="w-1/3 px-3 py-2 border rounded-lg">
-            </div>
-            <input type="text" id="bairro" placeholder="Bairro" required class="w-full px-3 py-2 border rounded-lg">
-            
-            <div class="flex space-x-2">
-                <select id="tipo_imovel" class="w-1/2 px-3 py-2 border rounded-lg bg-white">
-                    <option value="placa">Placa</option>
-                    <option value="prédio">Prédio</option>
-                    <option value="construtora">Construtora</option>
-                </select>
-                <select id="categoria" class="w-1/2 px-3 py-2 border rounded-lg bg-white">
-                    <option value="Proprietário">Proprietário</option>
-                    <option value="Obra/Construtora">Construtora</option>
-                </select>
-            </div>
 
-            <input type="text" id="nome" placeholder="Nome do Proprietário/Empresa" required class="w-full px-3 py-2 border rounded-lg">
-            <input type="text" id="telefone" placeholder="Telefone (O corretor não verá isso)" class="w-full px-3 py-2 border rounded-lg bg-blue-50 border-blue-200">
-            
-            <!-- Botão da Câmera -->
-            <div class="pt-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Fotos da Captação (obrigatório)</label>
-                <input type="file" id="fotos" accept="image/*" multiple capture="environment" class="w-full border p-2 rounded-lg bg-gray-50">
+        <!-- ABA 1: NOVA CAPTAÇÃO -->
+        <div id="abaCaptacao" class="p-4 flex-1 overflow-y-auto flex justify-center">
+            <div class="w-full max-w-md bg-white p-6 rounded-xl shadow-lg h-fit">
+                <h2 class="text-xl font-bold mb-4">Nova Captação</h2>
+                <form id="captacaoForm" class="space-y-3">
+                    <div class="flex space-x-2">
+                        <input type="text" id="rua" placeholder="Rua" required class="w-2/3 px-3 py-2 border rounded-lg">
+                        <input type="text" id="numero" placeholder="Nº" required class="w-1/3 px-3 py-2 border rounded-lg">
+                    </div>
+                    <input type="text" id="bairro" placeholder="Bairro" required class="w-full px-3 py-2 border rounded-lg">
+                    <div class="flex space-x-2">
+                        <select id="tipo_imovel" class="w-1/2 px-3 py-2 border rounded-lg bg-white">
+                            <option value="placa">Placa</option>
+                            <option value="prédio">Prédio</option>
+                            <option value="construtora">Construtora</option>
+                        </select>
+                        <select id="categoria" class="w-1/2 px-3 py-2 border rounded-lg bg-white">
+                            <option value="Proprietário">Proprietário</option>
+                            <option value="Obra/Construtora">Construtora</option>
+                        </select>
+                    </div>
+                    <input type="text" id="nome" placeholder="Nome do Proprietário/Empresa" required class="w-full px-3 py-2 border rounded-lg">
+                    <input type="text" id="telefone" placeholder="Telefone" class="w-full px-3 py-2 border rounded-lg bg-blue-50">
+                    <div class="pt-2">
+                        <label class="block text-sm font-medium mb-1">Fotos da Captação</label>
+                        <input type="file" id="fotos" accept="image/*" multiple capture="environment" class="w-full border p-2 rounded-lg bg-gray-50">
+                    </div>
+                    <button type="submit" id="btnSalvar" class="w-full bg-green-600 text-white font-bold py-3 rounded-lg mt-4">Salvar Captação</button>
+                </form>
+                <div id="msgCaptacao" class="mt-4 text-sm font-semibold hidden text-center"></div>
             </div>
+        </div>
 
-            <button type="submit" id="btnSalvar" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg mt-4 transition">
-                Salvar Captação
-            </button>
-        </form>
-        <div id="msgCaptacao" class="mt-4 text-sm font-semibold hidden text-center"></div>
+        <!-- ABA 2: FUNIL KANBAN -->
+        <div id="abaFunil" class="hidden p-4 flex-1 overflow-x-auto bg-gray-200">
+            <div id="kanbanBoard" class="flex space-x-4 h-full pb-4" style="min-width: max-content;">
+                <!-- Colunas serão geradas pelo JavaScript -->
+            </div>
+        </div>
     </div>
 
     <script>
         const supabaseUrl = 'https://ravfieobwgtlbryjrrny.supabase.co';
         const supabaseKey = 'sb_publishable_6Yh1LhK4Zi7v9wqQM1a8cA_UhH-CCQW';
         const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
-        let usuarioId = null; // Guardar quem está logado
+        let usuarioId = null;
 
-        // LOGICA DE LOGIN
+        const statusLista = ['não contatado', 'contatado', 'respondeu', 'qualificado', 'visita agendada', 'autorização assinada', 'cadastrado'];
+
+        // Trocar de abas
+        function mostrarAba(aba) {
+            document.getElementById('abaCaptacao').classList.add('hidden');
+            document.getElementById('abaFunil').classList.add('hidden');
+            if(aba === 'captacao') document.getElementById('abaCaptacao').classList.remove('hidden');
+            if(aba === 'funil') document.getElementById('abaFunil').classList.remove('hidden');
+        }
+
+        // Login
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const msgDiv = document.getElementById('mensagem');
-            msgDiv.classList.remove('hidden'); msgDiv.textContent = 'Autenticando...';
+            document.getElementById('mensagem').classList.remove('hidden');
+            document.getElementById('mensagem').textContent = 'Conectando...';
             
             const { data, error } = await supabaseClient.auth.signInWithPassword({
                 email: document.getElementById('email').value,
                 password: document.getElementById('senha').value,
             });
 
-            if (error) {
-                msgDiv.textContent = 'Erro no login.';
-            } else {
+            if (!error) {
                 usuarioId = data.user.id;
                 document.getElementById('loginArea').classList.add('hidden');
-                document.getElementById('dashboardArea').classList.remove('hidden');
+                document.getElementById('sistemaArea').classList.remove('hidden');
+                mostrarAba('captacao');
+            } else {
+                document.getElementById('mensagem').textContent = 'Erro no login.';
             }
         });
 
-        // LOGICA DE SALVAR CAPTAÇÃO E FOTO
+        // Salvar Captação
         document.getElementById('captacaoForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btnSalvar');
-            const msg = document.getElementById('msgCaptacao');
-            btn.textContent = 'Enviando foto e salvando...';
-            btn.disabled = true;
-            msg.classList.add('hidden');
+            btn.textContent = 'Enviando...'; btn.disabled = true;
 
             try {
-                // 1. Fazer upload das fotos
                 const arquivos = document.getElementById('fotos').files;
                 let linksFotos = [];
-                
                 for(let arquivo of arquivos) {
-                    const nomeArquivo = `${usuarioId}/${Date.now()}-${arquivo.name}`;
-                    const { data: uploadData, error: uploadError } = await supabaseClient.storage.from('fotos_captacao').upload(nomeArquivo, arquivo);
-                    
-                    if(uploadData) {
-                        const { data: urlData } = supabaseClient.storage.from('fotos_captacao').getPublicUrl(nomeArquivo);
-                        linksFotos.push(urlData.publicUrl);
-                    }
+                    const nome = `${usuarioId}/${Date.now()}-${arquivo.name}`;
+                    const { data } = await supabaseClient.storage.from('fotos_captacao').upload(nome, arquivo);
+                    if(data) linksFotos.push(supabaseClient.storage.from('fotos_captacao').getPublicUrl(nome).data.publicUrl);
                 }
 
-                // 2. Salvar dados no banco
-                const { error: insertError } = await supabaseClient.from('captacoes').insert([{
+                await supabaseClient.from('captacoes').insert([{
                     rua: document.getElementById('rua').value,
                     numero: document.getElementById('numero').value,
                     bairro: document.getElementById('bairro').value,
@@ -126,20 +139,68 @@
                     captador_id: usuarioId
                 }]);
 
-                if(insertError) throw insertError;
-
-                msg.textContent = '✅ Captação salva com sucesso!';
-                msg.className = 'mt-4 text-sm font-semibold text-center text-green-600 block';
-                document.getElementById('captacaoForm').reset(); // limpa o form
-                
-            } catch (err) {
-                msg.textContent = '❌ Erro ao salvar: ' + err.message;
-                msg.className = 'mt-4 text-sm font-semibold text-center text-red-600 block';
+                document.getElementById('msgCaptacao').textContent = '✅ Salvo!';
+                document.getElementById('msgCaptacao').className = 'mt-4 text-green-600 block text-center';
+                document.getElementById('captacaoForm').reset();
+            } catch(err) {
+                alert("Erro ao salvar.");
             } finally {
-                btn.textContent = 'Salvar Captação';
-                btn.disabled = false;
+                btn.textContent = 'Salvar Captação'; btn.disabled = false;
             }
         });
+
+        // Carregar Kanban
+        async function carregarFunil() {
+            const board = document.getElementById('kanbanBoard');
+            board.innerHTML = '<p class="p-4">Carregando captações...</p>';
+
+            // Puxa da vitrine blindada!
+            const { data: captacoes, error } = await supabaseClient.from('captacoes_vitrine').select('*').order('data_mapeamento', { ascending: false });
+            if (error) return board.innerHTML = '<p>Erro ao carregar dados.</p>';
+
+            board.innerHTML = '';
+            
+            // Cria colunas
+            statusLista.forEach(status => {
+                const itensColuna = captacoes.filter(c => c.status_funil === status);
+                
+                let htmlColuna = `
+                    <div class="bg-gray-100 rounded-lg shadow w-72 flex-shrink-0 flex flex-col max-h-full">
+                        <div class="p-3 border-b border-gray-200 bg-gray-50 rounded-t-lg font-bold text-gray-700 capitalize flex justify-between">
+                            ${status} <span class="bg-gray-200 text-xs py-1 px-2 rounded-full">${itensColuna.length}</span>
+                        </div>
+                        <div class="p-2 overflow-y-auto flex-1 space-y-3">
+                `;
+
+                itensColuna.forEach(item => {
+                    const fotoHtml = item.fotos && item.fotos.length > 0 ? `<img src="${item.fotos[0]}" class="w-full h-32 object-cover rounded mb-2">` : '';
+                    
+                    htmlColuna += `
+                        <div class="bg-white p-3 rounded shadow-sm border border-gray-200 text-sm">
+                            ${fotoHtml}
+                            <p class="font-bold truncate">${item.rua}, ${item.numero}</p>
+                            <p class="text-xs text-gray-500 mb-2">${item.bairro} - ${item.tipo_imovel}</p>
+                            <p class="font-semibold text-blue-800">👤 ${item.nome}</p>
+                            <p class="text-gray-600 mb-3">📞 ${item.telefones[0] || 'Sem telefone'}</p>
+                            
+                            <select onchange="mudarStatus('${item.id}', this.value)" class="w-full text-xs p-1 border rounded bg-gray-50">
+                                <option value="" disabled selected>Mover para...</option>
+                                ${statusLista.map(s => `<option value="${s}">${s}</option>`).join('')}
+                            </select>
+                        </div>
+                    `;
+                });
+
+                htmlColuna += `</div></div>`;
+                board.innerHTML += htmlColuna;
+            });
+        }
+
+        // Mudar Status no Banco
+        async function mudarStatus(id, novoStatus) {
+            await supabaseClient.from('captacoes').update({ status_funil: novoStatus }).eq('id', id);
+            carregarFunil(); // Recarrega o quadro
+        }
     </script>
 </body>
 </html>
