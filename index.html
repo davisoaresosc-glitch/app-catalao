@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Catalão - CRM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 flex flex-col items-center">
+
+    <!-- ÁREA DE LOGIN (Some quando entra) -->
+    <div id="loginArea" class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md text-center mt-10">
+        <h1 class="text-3xl font-bold text-blue-900 mb-6">Sistema Catalão</h1>
+        <form id="loginForm" class="space-y-4">
+            <input type="email" id="email" placeholder="Seu E-mail" required class="w-full px-4 py-2 border rounded-lg">
+            <input type="password" id="senha" placeholder="Sua Senha" required class="w-full px-4 py-2 border rounded-lg">
+            <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">Entrar</button>
+        </form>
+        <div id="mensagem" class="mt-4 text-sm font-semibold hidden"></div>
+    </div>
+
+    <!-- PAINEL DO CAPTADOR (Escondido até logar) -->
+    <div id="dashboardArea" class="hidden w-full max-w-md bg-white p-6 rounded-xl shadow-lg mt-4">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">Nova Captação</h2>
+            <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Logado</span>
+        </div>
+        
+        <form id="captacaoForm" class="space-y-3">
+            <div class="flex space-x-2">
+                <input type="text" id="rua" placeholder="Rua" required class="w-2/3 px-3 py-2 border rounded-lg">
+                <input type="text" id="numero" placeholder="Nº" required class="w-1/3 px-3 py-2 border rounded-lg">
+            </div>
+            <input type="text" id="bairro" placeholder="Bairro" required class="w-full px-3 py-2 border rounded-lg">
+            
+            <div class="flex space-x-2">
+                <select id="tipo_imovel" class="w-1/2 px-3 py-2 border rounded-lg bg-white">
+                    <option value="placa">Placa</option>
+                    <option value="prédio">Prédio</option>
+                    <option value="construtora">Construtora</option>
+                </select>
+                <select id="categoria" class="w-1/2 px-3 py-2 border rounded-lg bg-white">
+                    <option value="Proprietário">Proprietário</option>
+                    <option value="Obra/Construtora">Construtora</option>
+                </select>
+            </div>
+
+            <input type="text" id="nome" placeholder="Nome do Proprietário/Empresa" required class="w-full px-3 py-2 border rounded-lg">
+            <input type="text" id="telefone" placeholder="Telefone (O corretor não verá isso)" class="w-full px-3 py-2 border rounded-lg bg-blue-50 border-blue-200">
+            
+            <!-- Botão da Câmera -->
+            <div class="pt-2">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Fotos da Captação (obrigatório)</label>
+                <input type="file" id="fotos" accept="image/*" multiple capture="environment" class="w-full border p-2 rounded-lg bg-gray-50">
+            </div>
+
+            <button type="submit" id="btnSalvar" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg mt-4 transition">
+                Salvar Captação
+            </button>
+        </form>
+        <div id="msgCaptacao" class="mt-4 text-sm font-semibold hidden text-center"></div>
+    </div>
+
+    <script>
+        const supabaseUrl = 'https://ravfieobwgtlbryjrrny.supabase.co';
+        const supabaseKey = 'sb_publishable_6Yh1LhK4Zi7v9wqQM1a8cA_UhH-CCQW';
+        const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+        let usuarioId = null; // Guardar quem está logado
+
+        // LOGICA DE LOGIN
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const msgDiv = document.getElementById('mensagem');
+            msgDiv.classList.remove('hidden'); msgDiv.textContent = 'Autenticando...';
+            
+            const { data, error } = await supabaseClient.auth.signInWithPassword({
+                email: document.getElementById('email').value,
+                password: document.getElementById('senha').value,
+            });
+
+            if (error) {
+                msgDiv.textContent = 'Erro no login.';
+            } else {
+                usuarioId = data.user.id;
+                document.getElementById('loginArea').classList.add('hidden');
+                document.getElementById('dashboardArea').classList.remove('hidden');
+            }
+        });
+
+        // LOGICA DE SALVAR CAPTAÇÃO E FOTO
+        document.getElementById('captacaoForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btnSalvar');
+            const msg = document.getElementById('msgCaptacao');
+            btn.textContent = 'Enviando foto e salvando...';
+            btn.disabled = true;
+            msg.classList.add('hidden');
+
+            try {
+                // 1. Fazer upload das fotos
+                const arquivos = document.getElementById('fotos').files;
+                let linksFotos = [];
+                
+                for(let arquivo of arquivos) {
+                    const nomeArquivo = `${usuarioId}/${Date.now()}-${arquivo.name}`;
+                    const { data: uploadData, error: uploadError } = await supabaseClient.storage.from('fotos_captacao').upload(nomeArquivo, arquivo);
+                    
+                    if(uploadData) {
+                        const { data: urlData } = supabaseClient.storage.from('fotos_captacao').getPublicUrl(nomeArquivo);
+                        linksFotos.push(urlData.publicUrl);
+                    }
+                }
+
+                // 2. Salvar dados no banco
+                const { error: insertError } = await supabaseClient.from('captacoes').insert([{
+                    rua: document.getElementById('rua').value,
+                    numero: document.getElementById('numero').value,
+                    bairro: document.getElementById('bairro').value,
+                    tipo_imovel: document.getElementById('tipo_imovel').value,
+                    categoria: document.getElementById('categoria').value,
+                    nome: document.getElementById('nome').value,
+                    telefones: [document.getElementById('telefone').value],
+                    origem: 'campo',
+                    fotos: linksFotos,
+                    captador_id: usuarioId
+                }]);
+
+                if(insertError) throw insertError;
+
+                msg.textContent = '✅ Captação salva com sucesso!';
+                msg.className = 'mt-4 text-sm font-semibold text-center text-green-600 block';
+                document.getElementById('captacaoForm').reset(); // limpa o form
+                
+            } catch (err) {
+                msg.textContent = '❌ Erro ao salvar: ' + err.message;
+                msg.className = 'mt-4 text-sm font-semibold text-center text-red-600 block';
+            } finally {
+                btn.textContent = 'Salvar Captação';
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
