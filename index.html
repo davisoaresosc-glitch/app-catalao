@@ -17,6 +17,8 @@
         .coluna-drop.drag-over { background-color: #dbeafe; border: 2px dashed #3b82f6; }
         input[type="number"]::-webkit-inner-spin-button, 
         input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        /* Estilo para a linha riscada do checklist */
+        .riscado { text-decoration: line-through; color: #9ca3af; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen text-gray-800">
@@ -36,85 +38,127 @@
     <!-- SISTEMA LOGADO -->
     <div id="sistemaArea" class="hidden flex flex-col h-screen relative">
         <!-- Navegação Topo -->
-        <div class="bg-blue-900 text-white p-4 shadow-md flex justify-between items-center flex-wrap gap-2 z-10">
-            <h1 class="text-xl font-bold">Catalão CRM</h1>
-            <div class="space-x-2">
-                <button onclick="mostrarAba('captacao')" class="bg-blue-700 px-3 py-1 rounded hover:bg-blue-600 text-sm">Nova Captação</button>
-                <button onclick="mostrarAba('funil'); carregarFunil();" class="bg-blue-700 px-3 py-1 rounded hover:bg-blue-600 text-sm">Kanban</button>
-                <button onclick="mostrarAba('importacao')" class="bg-purple-700 px-3 py-1 rounded hover:bg-purple-600 text-sm font-bold">📥 Importar</button>
+        <div class="bg-blue-900 text-white p-3 shadow-md flex justify-between items-center flex-wrap gap-2 z-10">
+            <h1 class="text-lg md:text-xl font-bold">Catalão CRM</h1>
+            <div class="flex gap-2 flex-wrap">
+                <button onclick="mostrarAba('roteiro')" class="bg-orange-600 px-3 py-1.5 rounded hover:bg-orange-500 text-xs md:text-sm font-bold">📍 Roteiro</button>
+                <button onclick="mostrarAba('captacao')" class="bg-blue-700 px-3 py-1.5 rounded hover:bg-blue-600 text-xs md:text-sm font-bold">📷 Captação</button>
+                <button onclick="mostrarAba('funil'); carregarFunil();" class="bg-blue-700 px-3 py-1.5 rounded hover:bg-blue-600 text-xs md:text-sm font-bold">📊 Kanban</button>
+                <button onclick="mostrarAba('importacao')" class="bg-purple-700 px-3 py-1.5 rounded hover:bg-purple-600 text-xs md:text-sm font-bold">📥 Importar</button>
             </div>
         </div>
 
-        <!-- ABA 2: FUNIL KANBAN COM 5 FILTROS AVANÇADOS -->
+        <!-- ABA 1: NOVA CAPTAÇÃO (Restaurada e Completa!) -->
+        <div id="abaCaptacao" class="p-4 flex-1 overflow-y-auto flex justify-center hidden">
+            <div class="w-full max-w-md bg-white p-6 rounded-xl shadow-lg h-fit">
+                <h2 class="text-xl font-bold mb-4">Nova Captação em Campo</h2>
+                <form id="captacaoForm" class="space-y-3">
+                    <div class="flex space-x-2">
+                        <input type="text" id="rua" placeholder="Rua" required class="w-2/3 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <input type="text" id="numero" placeholder="Nº" required class="w-1/3 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <input type="text" id="bairro" placeholder="Bairro" required class="w-full px-3 py-2 border rounded-lg">
+                    
+                    <div class="flex space-x-2">
+                        <select id="tipo_imovel" class="w-1/2 px-3 py-2 border rounded-lg bg-white">
+                            <option value="placa">Placa</option>
+                            <option value="prédio">Prédio</option>
+                            <option value="construtora">Construtora</option>
+                        </select>
+                        <select id="categoria" class="w-1/2 px-3 py-2 border rounded-lg bg-white">
+                            <option value="Proprietário">Proprietário</option>
+                            <option value="Obra/Construtora">Construtora</option>
+                        </select>
+                    </div>
+
+                    <div class="flex space-x-2">
+                        <select id="origem" class="w-1/3 px-3 py-2 border rounded-lg bg-white text-sm">
+                            <option value="campo">Campo</option>
+                            <option value="indicação">Indicação</option>
+                        </select>
+                        <input type="text" id="nome" placeholder="Nome da Placa/Dono" required class="w-2/3 px-3 py-2 border rounded-lg">
+                    </div>
+
+                    <input type="text" id="telefone" placeholder="Telefone da Placa" class="w-full px-3 py-2 border rounded-lg bg-blue-50 font-bold text-blue-700">
+                    
+                    <div class="pt-2">
+                        <label class="block text-sm font-medium mb-1 text-gray-600">Fotos (Câmera)</label>
+                        <input type="file" id="fotos" accept="image/*" multiple capture="environment" class="w-full border p-2 rounded-lg bg-gray-50 text-sm">
+                    </div>
+
+                    <textarea id="observacoesCap" placeholder="Observações..." class="w-full px-3 py-2 border rounded-lg text-sm mt-2" rows="2"></textarea>
+                    
+                    <div class="flex items-center mt-2 mb-2 bg-blue-50 p-2 rounded border border-blue-100">
+                        <input type="checkbox" id="manter_endereco" class="mr-2 h-5 w-5 text-blue-600">
+                        <label for="manter_endereco" class="text-sm font-semibold text-blue-900 cursor-pointer">Continuar na mesma Rua/Bairro</label>
+                    </div>
+
+                    <button type="submit" id="btnSalvarCap" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg shadow mt-2">Salvar Captação</button>
+                    <div id="msgCaptacao" class="mt-4 text-sm font-bold text-center hidden"></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ABA 2: FUNIL KANBAN -->
         <div id="abaFunil" class="hidden flex-1 flex flex-col bg-gray-200 overflow-hidden">
-            
             <div class="p-4 bg-gray-200 border-b border-gray-300 flex flex-col gap-3 shrink-0">
-                <!-- Linha 1: Pesquisa Principal -->
                 <div class="w-full">
                     <input type="text" id="buscaKanban" oninput="carregarFunil()" placeholder="Pesquisa rápida (Rua, Código, Bairro, Observações)..." class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
                 </div>
-                
-                <!-- Linha 2: Filtros Avançados -->
                 <div class="flex gap-2 w-full overflow-x-auto items-center text-sm pb-1">
                     <span class="font-bold text-gray-500 text-xs uppercase tracking-wider mr-1 hidden lg:inline">Filtros:</span>
-                    
-                    <select id="filtroBairro" onchange="carregarFunil()" class="px-2 py-1.5 border border-gray-300 rounded-lg shadow-sm bg-white min-w-[130px] focus:ring-1 focus:ring-blue-500">
-                        <option value="">Todos os Bairros</option>
-                    </select>
-                    
-                    <select id="filtroTipo" onchange="carregarFunil()" class="px-2 py-1.5 border border-gray-300 rounded-lg shadow-sm bg-white min-w-[130px] focus:ring-1 focus:ring-blue-500">
-                        <option value="">Todos os Tipos</option>
-                    </select>
-
-                    <select id="filtroOrigem" onchange="carregarFunil()" class="px-2 py-1.5 border border-gray-300 rounded-lg shadow-sm bg-white min-w-[130px] focus:ring-1 focus:ring-blue-500">
-                        <option value="">Todas as Origens</option>
-                    </select>
-
-                    <select id="filtroQuartos" onchange="carregarFunil()" class="px-2 py-1.5 border border-gray-300 rounded-lg shadow-sm bg-white min-w-[110px] focus:ring-1 focus:ring-blue-500">
-                        <option value="0">Qts: Qualquer</option>
-                        <option value="1">1+ Quartos</option>
-                        <option value="2">2+ Quartos</option>
-                        <option value="3">3+ Quartos</option>
-                        <option value="4">4+ Quartos</option>
-                    </select>
-
-                    <select id="filtroArea" onchange="carregarFunil()" class="px-2 py-1.5 border border-gray-300 rounded-lg shadow-sm bg-white min-w-[120px] focus:ring-1 focus:ring-blue-500">
-                        <option value="0">Área: Qualquer</option>
-                        <option value="50">A partir de 50m²</option>
-                        <option value="100">A partir de 100m²</option>
-                        <option value="200">A partir de 200m²</option>
-                        <option value="400">A partir de 400m²</option>
-                    </select>
-
+                    <select id="filtroBairro" onchange="carregarFunil()" class="px-2 py-1.5 border border-gray-300 rounded-lg shadow-sm bg-white min-w-[130px] focus:ring-1 focus:ring-blue-500"><option value="">Todos os Bairros</option></select>
+                    <select id="filtroTipo" onchange="carregarFunil()" class="px-2 py-1.5 border border-gray-300 rounded-lg shadow-sm bg-white min-w-[130px] focus:ring-1 focus:ring-blue-500"><option value="">Todos os Tipos</option></select>
+                    <select id="filtroOrigem" onchange="carregarFunil()" class="px-2 py-1.5 border border-gray-300 rounded-lg shadow-sm bg-white min-w-[130px] focus:ring-1 focus:ring-blue-500"><option value="">Todas as Origens</option></select>
+                    <select id="filtroQuartos" onchange="carregarFunil()" class="px-2 py-1.5 border border-gray-300 rounded-lg shadow-sm bg-white min-w-[110px] focus:ring-1 focus:ring-blue-500"><option value="0">Qts: Qualquer</option><option value="1">1+ Quartos</option><option value="2">2+ Quartos</option><option value="3">3+ Quartos</option><option value="4">4+ Quartos</option></select>
+                    <select id="filtroArea" onchange="carregarFunil()" class="px-2 py-1.5 border border-gray-300 rounded-lg shadow-sm bg-white min-w-[120px] focus:ring-1 focus:ring-blue-500"><option value="0">Área: Qualquer</option><option value="50">A partir de 50m²</option><option value="100">A partir de 100m²</option><option value="200">A partir de 200m²</option><option value="400">A partir de 400m²</option></select>
                     <div class="flex-1"></div>
-                    
                     <button onclick="exportarExcel()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg font-bold shadow shrink-0 transition">📥 CSV</button>
                 </div>
             </div>
-            
             <div class="flex-1 overflow-x-auto overflow-y-hidden kanban-scroll p-4">
                 <div id="kanbanBoard" class="flex space-x-4 h-full min-w-max pb-2"></div>
             </div>
         </div>
 
-        <!-- ABAS SECUNDÁRIAS (Ocultas no HTML pra economizar espaço visual) -->
-        <div id="abaCaptacao" class="p-4 flex-1 overflow-y-auto flex justify-center hidden"></div>
-        <div id="abaImportacao" class="p-4 flex-1 overflow-y-auto flex justify-center hidden"></div>
+        <!-- ABA 3: IMPORTAÇÃO (Restaurada!) -->
+        <div id="abaImportacao" class="p-4 flex-1 overflow-y-auto flex justify-center hidden">
+            <div class="w-full max-w-lg bg-white p-8 rounded-xl shadow-lg h-fit text-center border-2 border-purple-200">
+                <h2 class="text-2xl font-bold mb-2 text-purple-900">Importação em Lote</h2>
+                <p class="text-sm text-gray-600 mb-6">O sistema buscará a aba "OLX - Todos os bairros" se existir.</p>
+                <input type="file" id="arquivoExcel" accept=".xls, .xlsx, .csv" class="w-full border p-3 rounded-lg mb-4">
+                <button id="btnImportar" onclick="processarPlanilha()" class="w-full bg-purple-600 text-white font-bold py-3 rounded-lg">Processar Planilha</button>
+                <div id="statusImportacao" class="mt-6 text-sm hidden p-4 bg-gray-100 border text-left space-y-2"></div>
+            </div>
+        </div>
 
-        <!-- ============================================== -->
-        <!-- MODAL DA FICHA COMPLETA -->
-        <!-- ============================================== -->
-        <div id="modalFicha" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
-            <!-- CÓDIGO DA FICHA MANTIDO EXATAMENTE IGUAL O ANTERIOR PARA NÃO QUEBRAR NADA -->
-            <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
-                <div class="bg-blue-900 p-4 flex justify-between items-center text-white shrink-0">
-                    <div>
-                        <h2 id="modalTitulo" class="text-xl font-bold">Rua</h2>
-                        <p id="modalSubtitulo" class="text-sm text-blue-200">Bairro - Tipo</p>
-                    </div>
-                    <button onclick="fecharModal()" class="text-white hover:text-red-400 font-bold text-2xl px-2">&times;</button>
+        <!-- ABA 4: ROTEIRO DE CAMPO (CHECKLIST DE RUAS) -->
+        <div id="abaRoteiro" class="p-4 flex-1 overflow-y-auto flex justify-center hidden bg-orange-50">
+            <div class="w-full max-w-md bg-white p-6 rounded-xl shadow-lg h-fit flex flex-col">
+                <h2 class="text-xl font-bold mb-1 text-orange-800">📍 Roteiro do Dia</h2>
+                <p class="text-xs text-gray-500 mb-6">Adicione as ruas que você vai visitar. Fica salvo no celular.</p>
+                
+                <div class="flex gap-2 mb-4">
+                    <input type="text" id="inputRuaRoteiro" placeholder="Ex: Av. José Faria da Rocha..." class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500" onkeypress="if(event.key === 'Enter') addRuaRoteiro()">
+                    <button onclick="addRuaRoteiro()" class="bg-orange-600 hover:bg-orange-700 text-white font-bold px-4 rounded-lg text-xl">+</button>
                 </div>
 
+                <div class="flex-1 overflow-y-auto max-h-96 pr-2">
+                    <ul id="listaRoteiro" class="space-y-2">
+                        <!-- Itens do checklist carregam aqui -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL DA FICHA COMPLETA -->
+        <div id="modalFicha" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+                <div class="bg-blue-900 p-4 flex justify-between items-center text-white shrink-0">
+                    <div><h2 id="modalTitulo" class="text-xl font-bold">Rua</h2><p id="modalSubtitulo" class="text-sm text-blue-200">Bairro</p></div>
+                    <button onclick="fecharModal()" class="text-white hover:text-red-400 font-bold text-2xl px-2">&times;</button>
+                </div>
+                <!-- O interior do modal editável segue igual -->
                 <div class="p-6 overflow-y-auto flex-1 bg-gray-50 flex flex-col md:flex-row gap-6">
                     <div class="flex-1 space-y-4">
                         <div class="bg-white p-4 rounded-lg shadow-sm border relative">
@@ -122,15 +166,11 @@
                                 <h3 class="font-bold text-gray-700">📍 Dados do Imóvel</h3>
                                 <button onclick="habilitarEdicao()" id="btnEditar" class="text-xs text-blue-600 font-bold hover:underline bg-blue-50 px-2 py-1 rounded border border-blue-100">✏️ Editar Ficha</button>
                             </div>
-                            
                             <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                                <div class="flex flex-col"><span class="text-gray-500 text-xs font-bold">Cód. Interno</span> <span id="modCod" class="py-1 font-semibold"></span></div>
+                                <div class="flex flex-col"><span class="text-gray-500 text-xs font-bold">Cód.</span> <span id="modCod" class="py-1 font-semibold"></span></div>
                                 <div class="flex flex-col"><span class="text-gray-500 text-xs font-bold">Origem</span> 
                                     <select id="edOrigem" class="editavel bg-transparent py-1 w-full text-sm font-semibold capitalize" disabled>
-                                        <option value="olx">OLX</option>
-                                        <option value="planilha">Planilha</option>
-                                        <option value="campo">Campo</option>
-                                        <option value="indicação">Indicação</option>
+                                        <option value="olx">OLX</option><option value="planilha">Planilha</option><option value="campo">Campo</option><option value="indicação">Indicação</option>
                                     </select>
                                 </div>
                                 <div class="flex flex-col"><span class="text-gray-500 text-xs font-bold">Valor (R$)</span> <input type="number" id="edPreco" class="editavel bg-transparent font-bold text-green-700 w-full" disabled></div>
@@ -141,14 +181,12 @@
                                 <div class="flex flex-col"><span class="text-gray-500 text-xs font-bold">Condomínio (R$)</span> <input type="number" id="edCond" class="editavel bg-transparent w-full font-semibold" disabled></div>
                                 <div class="flex flex-col"><span class="text-gray-500 text-xs font-bold">IPTU (R$)</span> <input type="number" id="edIptu" class="editavel bg-transparent w-full font-semibold" disabled></div>
                             </div>
-
                             <div class="mt-4 border-t pt-3">
-                                <span class="text-gray-500 text-xs font-bold block mb-1">Observações Gerais</span>
+                                <span class="text-gray-500 text-xs font-bold block mb-1">Observações</span>
                                 <textarea id="edObs" class="editavel bg-transparent w-full text-sm italic text-gray-700 h-16 resize-none" disabled></textarea>
                             </div>
-
                             <div id="areaSalvarEdicao" class="hidden mt-4 pt-3 border-t">
-                                <button onclick="salvarEdicao()" id="btnSalvarEdicao" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded shadow transition">💾 Salvar Alterações</button>
+                                <button onclick="salvarEdicao()" id="btnSalvarEdicao" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded shadow">💾 Salvar Alterações</button>
                             </div>
                         </div>
                     </div>
@@ -156,7 +194,6 @@
                     <div class="flex-1 flex flex-col space-y-4 min-w-[300px]">
                         <div class="bg-white p-4 rounded-lg shadow-sm border border-blue-100 flex-1">
                             <h3 class="font-bold text-blue-900 border-b border-blue-100 pb-2 mb-3">💬 Abordagem e Contato</h3>
-                            
                             <div class="flex items-center gap-2 mb-2">
                                 <span class="text-gray-500 text-sm font-bold w-20">Contato:</span>
                                 <input type="text" id="edNome" class="editavel bg-transparent font-bold text-gray-800 text-sm flex-1" disabled>
@@ -171,21 +208,15 @@
                                     <label class="text-xs font-bold text-gray-600 uppercase">Template de Mensagem</label>
                                     <button class="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded font-bold hover:bg-purple-200">✨ IA (Em breve)</button>
                                 </div>
-                                <select id="tipoMensagem" onchange="atualizarMensagem()" class="w-full text-sm p-2 border rounded mb-2 bg-white focus:ring-1 focus:ring-blue-500">
-                                    <option value="padrao">Abordagem Padrão (Amigável)</option>
-                                    <option value="direta">Abordagem Direta (Foco na Venda)</option>
-                                    <option value="investidor">Abordagem para Investidor</option>
-                                </select>
-                                <textarea id="textoMensagem" class="w-full text-sm p-2 border rounded bg-white h-32 focus:ring-1 focus:ring-blue-500"></textarea>
-                                
+                                <select id="tipoMensagem" onchange="atualizarMensagem()" class="w-full text-sm p-2 border rounded mb-2 bg-white"><option value="padrao">Padrão</option><option value="direta">Direta</option><option value="investidor">Investidor</option></select>
+                                <textarea id="textoMensagem" class="w-full text-sm p-2 border rounded bg-white h-32"></textarea>
                                 <div class="flex gap-2 mt-2">
-                                    <button onclick="copiarMensagem()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-bold py-2 rounded">📋 Copiar</button>
+                                    <button onclick="copiarMensagem()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-sm font-bold py-2 rounded">📋 Copiar</button>
                                     <button id="btnEnviarZap" onclick="enviarWhatsApp()" class="flex-1 bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-2 rounded">💬 WhatsApp</button>
                                 </div>
                             </div>
-                            
                             <div id="modLinkArea" class="mt-4 text-center hidden">
-                                <a id="modLink" href="#" target="_blank" class="inline-block bg-blue-50 text-blue-600 text-xs font-bold px-3 py-2 rounded border border-blue-200 hover:bg-blue-100 transition">🔗 Ver Anúncio na OLX</a>
+                                <a id="modLink" href="#" target="_blank" class="inline-block bg-blue-50 text-blue-600 text-xs font-bold px-3 py-2 rounded border border-blue-200 hover:bg-blue-100">🔗 Ver Anúncio na OLX</a>
                             </div>
                         </div>
                     </div>
@@ -201,6 +232,7 @@
         let usuarioId = null;
         let captacoesGlobais = [];
         let imovelAtual = null; 
+        let roteiroHoje = []; // Variável do Checklist
 
         const statusLista = ['não contatado', 'contatado', 'respondeu', 'qualificado', 'visita agendada', 'visita realizada', 'cadastrado'];
 
@@ -208,7 +240,12 @@
             document.getElementById('abaCaptacao').classList.add('hidden');
             document.getElementById('abaFunil').classList.add('hidden');
             document.getElementById('abaImportacao').classList.add('hidden');
+            document.getElementById('abaRoteiro').classList.add('hidden');
+            
+            if(aba === 'captacao') document.getElementById('abaCaptacao').classList.remove('hidden');
             if(aba === 'funil') document.getElementById('abaFunil').classList.remove('hidden');
+            if(aba === 'importacao') document.getElementById('abaImportacao').classList.remove('hidden');
+            if(aba === 'roteiro') { document.getElementById('abaRoteiro').classList.remove('hidden'); carregarRoteiro(); }
         }
 
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
@@ -220,25 +257,136 @@
                 usuarioId = data.user.id;
                 document.getElementById('loginArea').classList.add('hidden');
                 document.getElementById('sistemaArea').classList.remove('hidden');
-                mostrarAba('funil'); carregarFunil();
+                mostrarAba('roteiro'); // Abre direto no Roteiro para facilitar o dia de campo!
             }
         });
 
+        // ==========================================
+        // 1. LÓGICA DO ROTEIRO (CHECKLIST OFFLINE)
+        // ==========================================
+        function carregarRoteiro() {
+            const salvo = localStorage.getItem('roteiro_catalao');
+            if(salvo) roteiroHoje = JSON.parse(salvo);
+            renderizarRoteiro();
+        }
+
+        function salvarRoteiroLocal() {
+            localStorage.setItem('roteiro_catalao', JSON.stringify(roteiroHoje));
+            renderizarRoteiro();
+        }
+
+        function addRuaRoteiro() {
+            const input = document.getElementById('inputRuaRoteiro');
+            if(input.value.trim() === '') return;
+            roteiroHoje.push({ rua: input.value, concluido: false, id: Date.now() });
+            input.value = '';
+            salvarRoteiroLocal();
+        }
+
+        function toggleRuaRoteiro(id) {
+            const item = roteiroHoje.find(r => r.id === id);
+            if(item) { item.concluido = !item.concluido; salvarRoteiroLocal(); }
+        }
+
+        function removerRuaRoteiro(id) {
+            roteiroHoje = roteiroHoje.filter(r => r.id !== id);
+            salvarRoteiroLocal();
+        }
+
+        function renderizarRoteiro() {
+            const lista = document.getElementById('listaRoteiro');
+            lista.innerHTML = '';
+            
+            if(roteiroHoje.length === 0) {
+                lista.innerHTML = '<p class="text-sm text-gray-400 text-center mt-4">Nenhuma rua no roteiro. Adicione acima!</p>';
+                return;
+            }
+
+            roteiroHoje.forEach(item => {
+                const checked = item.concluido ? 'checked' : '';
+                const riscado = item.concluido ? 'riscado' : 'font-semibold text-gray-800';
+                
+                lista.innerHTML += `
+                    <li class="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg shadow-sm">
+                        <div class="flex items-center gap-3 cursor-pointer flex-1" onclick="toggleRuaRoteiro(${item.id})">
+                            <input type="checkbox" class="h-5 w-5 text-orange-600 rounded border-gray-300" ${checked} onclick="event.stopPropagation(); toggleRuaRoteiro(${item.id})">
+                            <span class="${riscado} text-sm flex-1 break-words">${item.rua}</span>
+                        </div>
+                        <button onclick="removerRuaRoteiro(${item.id})" class="text-gray-400 hover:text-red-500 font-bold px-2 py-1">X</button>
+                    </li>
+                `;
+            });
+        }
+
+        // ==========================================
+        // 2. LÓGICA DE CAPTAÇÃO MANUAL EM CAMPO
+        // ==========================================
+        document.getElementById('captacaoForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btnSalvarCap');
+            btn.textContent = 'Salvando...'; btn.disabled = true;
+
+            try {
+                // Logica de upload de fotos do celular para o banco
+                const arquivos = document.getElementById('fotos').files;
+                let linksFotos = [];
+                for(let arquivo of arquivos) {
+                    const nomeStr = `${usuarioId}/${Date.now()}-${arquivo.name}`;
+                    const { data } = await supabaseClient.storage.from('fotos_captacao').upload(nomeStr, arquivo);
+                    if(data) linksFotos.push(supabaseClient.storage.from('fotos_captacao').getPublicUrl(nomeStr).data.publicUrl);
+                }
+
+                await supabaseClient.from('captacoes').insert([{
+                    rua: document.getElementById('rua').value,
+                    numero: document.getElementById('numero').value,
+                    bairro: document.getElementById('bairro').value,
+                    tipo_imovel: document.getElementById('tipo_imovel').value,
+                    categoria: document.getElementById('categoria').value,
+                    nome: document.getElementById('nome').value,
+                    telefones: [document.getElementById('telefone').value],
+                    origem: document.getElementById('origem').value,
+                    observacoes: document.getElementById('observacoesCap').value,
+                    fotos: linksFotos,
+                    captador_id: usuarioId
+                }]);
+
+                const msg = document.getElementById('msgCaptacao');
+                msg.textContent = '✅ Captação Registrada com Sucesso!';
+                msg.className = 'mt-4 text-green-600 block text-center font-bold text-lg';
+                
+                // Lógica da caixinha mágica para continuar na mesma rua
+                if(document.getElementById('manter_endereco').checked) {
+                    const rua = document.getElementById('rua').value;
+                    const bairro = document.getElementById('bairro').value;
+                    document.getElementById('captacaoForm').reset();
+                    document.getElementById('rua').value = rua;
+                    document.getElementById('bairro').value = bairro;
+                    document.getElementById('manter_endereco').checked = true;
+                } else {
+                    document.getElementById('captacaoForm').reset();
+                }
+                
+                captacoesGlobais = []; // Limpa cache
+                setTimeout(() => { msg.classList.add('hidden'); }, 3000);
+            } catch(err) {
+                alert("Erro ao salvar: " + err.message);
+            } finally {
+                btn.textContent = 'Salvar Captação'; btn.disabled = false;
+            }
+        });
+
+        // ==========================================
+        // 3. KANBAN, FILTROS E DRAG&DROP
+        // ==========================================
         function allowDrop(ev) { ev.preventDefault(); ev.currentTarget.classList.add('drag-over'); }
         function dragLeave(ev) { ev.currentTarget.classList.remove('drag-over'); }
         function drag(ev, id) { ev.dataTransfer.setData("id_captacao", id); }
         async function drop(ev, novoStatus) {
             ev.preventDefault(); ev.currentTarget.classList.remove('drag-over');
             const id = ev.dataTransfer.getData("id_captacao");
-            if(id && novoStatus) {
-                await supabaseClient.from('captacoes').update({ status_funil: novoStatus }).eq('id', id);
-                captacoesGlobais = []; carregarFunil(); 
-            }
+            if(id && novoStatus) { await supabaseClient.from('captacoes').update({ status_funil: novoStatus }).eq('id', id); captacoesGlobais = []; carregarFunil(); }
         }
 
-        // ==========================================
-        // KANBAN (COM TODOS OS 5 FILTROS)
-        // ==========================================
         async function carregarFunil() {
             const board = document.getElementById('kanbanBoard');
             const tBusca = document.getElementById('buscaKanban').value.toLowerCase();
@@ -253,203 +401,114 @@
                 if (error) return;
                 captacoesGlobais = data;
 
-                // Popula Bairro, Tipo e Origem sozinhos!
-                const selBairro = document.getElementById('filtroBairro');
-                if(selBairro.options.length === 1) {
-                    [...new Set(data.map(c => c.bairro).filter(Boolean))].sort().forEach(b => selBairro.innerHTML += `<option value="${b}">${b}</option>`);
-                }
-                const selTipo = document.getElementById('filtroTipo');
-                if(selTipo.options.length === 1) {
-                    [...new Set(data.map(c => c.subtipo || c.tipo_imovel).filter(Boolean))].sort().forEach(t => selTipo.innerHTML += `<option value="${t}">${t}</option>`);
-                }
-                const selOrigem = document.getElementById('filtroOrigem');
-                if(selOrigem.options.length === 1) {
-                    [...new Set(data.map(c => c.origem).filter(Boolean))].sort().forEach(o => selOrigem.innerHTML += `<option value="${o}" class="capitalize">${o}</option>`);
-                }
+                const selBairro = document.getElementById('filtroBairro'); if(selBairro.options.length === 1) { [...new Set(data.map(c => c.bairro).filter(Boolean))].sort().forEach(b => selBairro.innerHTML += `<option value="${b}">${b}</option>`); }
+                const selTipo = document.getElementById('filtroTipo'); if(selTipo.options.length === 1) { [...new Set(data.map(c => c.subtipo || c.tipo_imovel).filter(Boolean))].sort().forEach(t => selTipo.innerHTML += `<option value="${t}">${t}</option>`); }
+                const selOrigem = document.getElementById('filtroOrigem'); if(selOrigem.options.length === 1) { [...new Set(data.map(c => c.origem).filter(Boolean))].sort().forEach(o => selOrigem.innerHTML += `<option value="${o}" class="capitalize">${o}</option>`); }
             }
 
-            // O Super Filtro Aplicado
             const captacoesFiltradas = captacoesGlobais.filter(c => 
                 ((c.rua && c.rua.toLowerCase().includes(tBusca)) || (c.codigo && c.codigo.toString().includes(tBusca)) || (c.observacoes && c.observacoes.toLowerCase().includes(tBusca))) &&
-                (fBairro === "" || c.bairro === fBairro) &&
-                (fTipo === "" || (c.subtipo || c.tipo_imovel) === fTipo) &&
-                (fOrigem === "" || c.origem === fOrigem) &&
-                (fQuartos === 0 || c.quartos >= fQuartos) &&
-                (fArea === 0 || c.area >= fArea)
+                (fBairro === "" || c.bairro === fBairro) && (fTipo === "" || (c.subtipo || c.tipo_imovel) === fTipo) && (fOrigem === "" || c.origem === fOrigem) &&
+                (fQuartos === 0 || c.quartos >= fQuartos) && (fArea === 0 || c.area >= fArea)
             );
 
             board.innerHTML = '';
-            
             statusLista.forEach(status => {
                 const itens = captacoesFiltradas.filter(c => c.status_funil === status);
-                
-                let html = `
-                    <div class="bg-gray-100 rounded-lg shadow w-[340px] flex-shrink-0 flex flex-col max-h-full coluna-drop"
-                         ondrop="drop(event, '${status}')" ondragover="allowDrop(event)" ondragleave="dragLeave(event)">
-                        <div class="p-3 border-b bg-gray-50 rounded-t-lg font-bold capitalize flex justify-between text-gray-700 pointer-events-none">
-                            ${status} <span class="bg-blue-100 text-blue-800 text-xs py-1 px-2 rounded-full">${itens.length}</span>
-                        </div>
-                        <div class="p-2 space-y-3 overflow-y-auto flex-1 kanban-scroll">`;
+                let html = `<div class="bg-gray-100 rounded-lg shadow w-[340px] flex-shrink-0 flex flex-col max-h-full coluna-drop" ondrop="drop(event, '${status}')" ondragover="allowDrop(event)" ondragleave="dragLeave(event)"><div class="p-3 border-b bg-gray-50 rounded-t-lg font-bold capitalize flex justify-between text-gray-700 pointer-events-none">${status} <span class="bg-blue-100 text-blue-800 text-xs py-1 px-2 rounded-full">${itens.length}</span></div><div class="p-2 space-y-3 overflow-y-auto flex-1 kanban-scroll">`;
                 
                 itens.forEach(item => {
                     const preco = item.preco ? `R$ ${item.preco.toLocaleString('pt-BR')}` : 'Valor não informado';
                     const cod = item.codigo ? `Cód: ${item.codigo}` : 'Novo';
-                    
                     let iconesHtml = '';
                     if(item.area || item.quartos || item.banheiros || item.vagas) {
-                        iconesHtml = `
-                            <div class="flex items-center gap-3 text-xs text-gray-600 mt-2 mb-3 bg-gray-50 p-1.5 rounded border border-gray-100 justify-center font-medium">
-                                ${item.area ? `<div title="Área">📐 ${item.area}m²</div>` : ''}
-                                ${item.quartos ? `<div title="Quartos">🛏️ ${item.quartos}</div>` : ''}
-                                ${item.banheiros ? `<div title="Banheiros">🚿 ${item.banheiros}</div>` : ''}
-                                ${item.vagas ? `<div title="Vagas">🚗 ${item.vagas}</div>` : ''}
-                            </div>
-                        `;
+                        iconesHtml = `<div class="flex items-center gap-3 text-xs text-gray-600 mt-2 mb-3 bg-gray-50 p-1.5 rounded border border-gray-100 justify-center font-medium">${item.area ? `<div>📐 ${item.area}m²</div>` : ''}${item.quartos ? `<div>🛏️ ${item.quartos}</div>` : ''}${item.banheiros ? `<div>🚿 ${item.banheiros}</div>` : ''}${item.vagas ? `<div>🚗 ${item.vagas}</div>` : ''}</div>`;
                     }
-                    
-                    html += `
-                        <div class="bg-white p-3 rounded shadow-sm border border-gray-200 text-sm relative card-drag hover:border-blue-400 transition"
-                             draggable="true" ondragstart="drag(event, '${item.id}')" onclick="abrirFicha('${item.id}')">
-                            <span class="absolute top-2 right-2 text-xs font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 shadow-sm">${cod}</span>
-                            
-                            <p class="font-bold text-blue-900 pr-12 truncate leading-tight">${item.rua}</p>
-                            <p class="text-xs text-gray-500 mt-1 truncate">${item.bairro} - ${item.subtipo || item.tipo_imovel}</p>
-                            <p class="font-bold text-green-700 mt-1 text-base">${preco}</p>
-                            
-                            ${iconesHtml}
-                            
-                            <div class="text-center text-xs text-blue-500 font-semibold bg-blue-50 py-1 rounded cursor-pointer hover:bg-blue-100 transition">
-                                🔍 Clique para abrir a ficha
-                            </div>
-                        </div>
-                    `;
+                    html += `<div class="bg-white p-3 rounded shadow-sm border border-gray-200 text-sm relative card-drag hover:border-blue-400 transition" draggable="true" ondragstart="drag(event, '${item.id}')" onclick="abrirFicha('${item.id}')"><span class="absolute top-2 right-2 text-xs font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 shadow-sm">${cod}</span><p class="font-bold text-blue-900 pr-12 truncate leading-tight">${item.rua}</p><p class="text-xs text-gray-500 mt-1 truncate">${item.bairro} - ${item.subtipo || item.tipo_imovel}</p><p class="font-bold text-green-700 mt-1 text-base">${preco}</p>${iconesHtml}<div class="text-center text-xs text-blue-500 font-semibold bg-blue-50 py-1 rounded cursor-pointer hover:bg-blue-100 transition">🔍 Abrir ficha completa</div></div>`;
                 });
-                html += `</div></div>`;
-                board.innerHTML += html;
+                html += `</div></div>`; board.innerHTML += html;
             });
         }
 
         // ==========================================
-        // LÓGICA DO MODAL
+        // 4. LÓGICA DO MODAL EDITÁVEL
         // ==========================================
         function abrirFicha(id) {
             imovelAtual = captacoesGlobais.find(c => c.id === id);
             if(!imovelAtual) return;
-
-            document.querySelectorAll('.editavel').forEach(el => { 
-                el.disabled = true; el.classList.remove('border', 'bg-white', 'px-2', 'py-1', 'shadow-inner'); el.classList.add('bg-transparent');
-            });
-            document.getElementById('btnEditar').classList.remove('hidden');
-            document.getElementById('areaSalvarEdicao').classList.add('hidden');
-
-            document.getElementById('modalTitulo').textContent = imovelAtual.rua;
-            document.getElementById('modalSubtitulo').textContent = `${imovelAtual.bairro} - ${imovelAtual.subtipo || imovelAtual.tipo_imovel}`;
-            document.getElementById('modCod').textContent = imovelAtual.codigo || '-';
+            document.querySelectorAll('.editavel').forEach(el => { el.disabled = true; el.classList.remove('border', 'bg-white', 'px-2', 'py-1', 'shadow-inner'); el.classList.add('bg-transparent'); });
+            document.getElementById('btnEditar').classList.remove('hidden'); document.getElementById('areaSalvarEdicao').classList.add('hidden');
+            document.getElementById('modalTitulo').textContent = imovelAtual.rua; document.getElementById('modalSubtitulo').textContent = `${imovelAtual.bairro} - ${imovelAtual.subtipo || imovelAtual.tipo_imovel}`; document.getElementById('modCod').textContent = imovelAtual.codigo || '-';
             
-            document.getElementById('edOrigem').value = imovelAtual.origem || 'olx';
-            document.getElementById('edNome').value = imovelAtual.nome || '';
-            let tel = (imovelAtual.telefones && imovelAtual.telefones[0] !== '{}') ? imovelAtual.telefones[0] : '';
-            document.getElementById('edTelefone').value = tel;
+            document.getElementById('edOrigem').value = imovelAtual.origem || 'olx'; document.getElementById('edNome').value = imovelAtual.nome || '';
+            let tel = (imovelAtual.telefones && imovelAtual.telefones[0] !== '{}') ? imovelAtual.telefones[0] : ''; document.getElementById('edTelefone').value = tel;
+            document.getElementById('edPreco').value = imovelAtual.preco || ''; document.getElementById('edArea').value = imovelAtual.area || ''; document.getElementById('edQuartos').value = imovelAtual.quartos || ''; document.getElementById('edBanheiros').value = imovelAtual.banheiros || ''; document.getElementById('edVagas').value = imovelAtual.vagas || ''; document.getElementById('edCond').value = imovelAtual.condominio || ''; document.getElementById('edIptu').value = imovelAtual.iptu || ''; document.getElementById('edObs').value = imovelAtual.observacoes || '';
 
-            document.getElementById('edPreco').value = imovelAtual.preco || '';
-            document.getElementById('edArea').value = imovelAtual.area || '';
-            document.getElementById('edQuartos').value = imovelAtual.quartos || '';
-            document.getElementById('edBanheiros').value = imovelAtual.banheiros || '';
-            document.getElementById('edVagas').value = imovelAtual.vagas || '';
-            document.getElementById('edCond').value = imovelAtual.condominio || '';
-            document.getElementById('edIptu').value = imovelAtual.iptu || '';
-            document.getElementById('edObs').value = imovelAtual.observacoes || '';
-
-            if(imovelAtual.link_anuncio && imovelAtual.link_anuncio.startsWith('http')) {
-                document.getElementById('modLinkArea').classList.remove('hidden'); document.getElementById('modLink').href = imovelAtual.link_anuncio;
-            } else { document.getElementById('modLinkArea').classList.add('hidden'); }
+            if(imovelAtual.link_anuncio && imovelAtual.link_anuncio.startsWith('http')) { document.getElementById('modLinkArea').classList.remove('hidden'); document.getElementById('modLink').href = imovelAtual.link_anuncio; } else { document.getElementById('modLinkArea').classList.add('hidden'); }
 
             const btnZap = document.getElementById('btnEnviarZap');
-            if(tel === '' || tel === 'Bloqueado') {
-                btnZap.classList.replace('bg-green-500', 'bg-gray-400'); btnZap.disabled = true; btnZap.textContent = '❌ Sem Telefone';
-            } else {
-                btnZap.classList.replace('bg-gray-400', 'bg-green-500'); btnZap.disabled = false; btnZap.textContent = '💬 WhatsApp';
-            }
+            if(tel === '' || tel === 'Bloqueado') { btnZap.classList.replace('bg-green-500', 'bg-gray-400'); btnZap.disabled = true; btnZap.textContent = '❌ Sem Telefone'; } else { btnZap.classList.replace('bg-gray-400', 'bg-green-500'); btnZap.disabled = false; btnZap.textContent = '💬 WhatsApp'; }
 
-            document.getElementById('tipoMensagem').value = 'padrao';
-            atualizarMensagem();
-            document.getElementById('modalFicha').classList.remove('hidden');
+            document.getElementById('tipoMensagem').value = 'padrao'; atualizarMensagem(); document.getElementById('modalFicha').classList.remove('hidden');
         }
 
         function fecharModal() { document.getElementById('modalFicha').classList.add('hidden'); }
-
-        function habilitarEdicao() {
-            document.querySelectorAll('.editavel').forEach(el => { 
-                el.disabled = false; el.classList.remove('bg-transparent'); el.classList.add('border', 'bg-white', 'px-2', 'py-1', 'shadow-inner', 'rounded'); 
-            });
-            document.getElementById('btnEditar').classList.add('hidden');
-            document.getElementById('areaSalvarEdicao').classList.remove('hidden');
-            document.getElementById('edPreco').focus();
-        }
+        function habilitarEdicao() { document.querySelectorAll('.editavel').forEach(el => { el.disabled = false; el.classList.remove('bg-transparent'); el.classList.add('border', 'bg-white', 'px-2', 'py-1', 'shadow-inner', 'rounded'); }); document.getElementById('btnEditar').classList.add('hidden'); document.getElementById('areaSalvarEdicao').classList.remove('hidden'); document.getElementById('edPreco').focus(); }
 
         async function salvarEdicao() {
-            const btn = document.getElementById('btnSalvarEdicao');
-            btn.textContent = '⏳ Salvando...'; btn.disabled = true;
-            
+            const btn = document.getElementById('btnSalvarEdicao'); btn.textContent = '⏳ Salvando...'; btn.disabled = true;
             const limpaNum = (val) => val ? parseFloat(val) : null;
-            
-            const updates = {
-                preco: limpaNum(document.getElementById('edPreco').value),
-                area: limpaNum(document.getElementById('edArea').value),
-                quartos: limpaNum(document.getElementById('edQuartos').value),
-                banheiros: limpaNum(document.getElementById('edBanheiros').value),
-                vagas: limpaNum(document.getElementById('edVagas').value),
-                condominio: limpaNum(document.getElementById('edCond').value),
-                iptu: limpaNum(document.getElementById('edIptu').value),
-                observacoes: document.getElementById('edObs').value,
-                origem: document.getElementById('edOrigem').value,
-                nome: document.getElementById('edNome').value,
-                telefones: [document.getElementById('edTelefone').value]
-            };
-
+            const updates = { preco: limpaNum(document.getElementById('edPreco').value), area: limpaNum(document.getElementById('edArea').value), quartos: limpaNum(document.getElementById('edQuartos').value), banheiros: limpaNum(document.getElementById('edBanheiros').value), vagas: limpaNum(document.getElementById('edVagas').value), condominio: limpaNum(document.getElementById('edCond').value), iptu: limpaNum(document.getElementById('edIptu').value), observacoes: document.getElementById('edObs').value, origem: document.getElementById('edOrigem').value, nome: document.getElementById('edNome').value, telefones: [document.getElementById('edTelefone').value] };
             const { error } = await supabaseClient.from('captacoes').update(updates).eq('id', imovelAtual.id);
-            
             if(!error) {
                 captacoesGlobais = []; carregarFunil();
                 btn.textContent = '✅ Salvo com sucesso!'; btn.classList.replace('bg-blue-600', 'bg-green-600');
-                
-                setTimeout(() => {
-                    document.querySelectorAll('.editavel').forEach(el => { 
-                        el.disabled = true; el.classList.remove('border', 'bg-white', 'px-2', 'py-1', 'shadow-inner', 'rounded'); el.classList.add('bg-transparent');
-                    });
-                    btn.textContent = '💾 Salvar Alterações'; btn.classList.replace('bg-green-600', 'bg-blue-600'); btn.disabled = false;
-                    document.getElementById('areaSalvarEdicao').classList.add('hidden');
-                    document.getElementById('btnEditar').classList.remove('hidden');
-                }, 1500);
-            } else {
-                alert('Erro ao salvar no banco: ' + error.message);
-                btn.textContent = '💾 Salvar Alterações'; btn.disabled = false;
-            }
+                setTimeout(() => { document.querySelectorAll('.editavel').forEach(el => { el.disabled = true; el.classList.remove('border', 'bg-white', 'px-2', 'py-1', 'shadow-inner', 'rounded'); el.classList.add('bg-transparent'); }); btn.textContent = '💾 Salvar Alterações'; btn.classList.replace('bg-green-600', 'bg-blue-600'); btn.disabled = false; document.getElementById('areaSalvarEdicao').classList.add('hidden'); document.getElementById('btnEditar').classList.remove('hidden'); }, 1500);
+            } else { alert('Erro: ' + error.message); btn.textContent = '💾 Salvar Alterações'; btn.disabled = false; }
         }
 
         function atualizarMensagem() {
-            if(!imovelAtual) return;
-            const tipo = document.getElementById('tipoMensagem').value;
-            const bairro = imovelAtual.bairro || 'seu bairro';
-            const subtipo = imovelAtual.subtipo || imovelAtual.tipo_imovel || 'imóvel';
-            const preco = document.getElementById('edPreco').value ? ` de R$ ${parseFloat(document.getElementById('edPreco').value).toLocaleString('pt-BR')}` : '';
-            
+            if(!imovelAtual) return; const tipo = document.getElementById('tipoMensagem').value; const bairro = imovelAtual.bairro || 'seu bairro'; const subtipo = imovelAtual.subtipo || imovelAtual.tipo_imovel || 'imóvel'; const preco = document.getElementById('edPreco').value ? ` de R$ ${parseFloat(document.getElementById('edPreco').value).toLocaleString('pt-BR')}` : '';
             let texto = "";
             if(tipo === 'padrao') texto = `Olá! Tudo bem?\n\nVi o seu anúncio referente ao ${subtipo} no bairro ${bairro}${preco}. Ele ainda está disponível?\n\nSou corretor parceiro da Imobiliária Catalão e tenho clientes buscando exatamente esse perfil na região. Podemos conversar sobre uma possível parceria de venda?`;
             else if (tipo === 'direta') texto = `Olá, bom dia! Vi o anúncio do ${subtipo} em ${bairro}.\n\nTrabalho na Imobiliária Catalão e temos forte atuação nessa região. Gostaria de agendar uma visita rápida para conhecer o imóvel e apresentar aos nossos clientes ativos. Qual o melhor dia para você?`;
             else if (tipo === 'investidor') texto = `Olá! Tenho clientes investidores monitorando oportunidades em ${bairro} e o seu ${subtipo} chamou a atenção.\n\nSou da Imobiliária Catalão, o imóvel ainda está disponível para negociação?`;
-            
             document.getElementById('textoMensagem').value = texto;
         }
 
-        function copiarMensagem() {
-            navigator.clipboard.writeText(document.getElementById('textoMensagem').value); alert('✅ Mensagem copiada!');
-        }
+        function copiarMensagem() { navigator.clipboard.writeText(document.getElementById('textoMensagem').value); alert('✅ Mensagem copiada!'); }
+        function enviarWhatsApp() { const txt = encodeURIComponent(document.getElementById('textoMensagem').value); let num = document.getElementById('edTelefone').value.replace(/\D/g, ''); if(num.length >= 10) window.open(`https://wa.me/55${num}?text=${txt}`, '_blank'); }
 
-        function enviarWhatsApp() {
-            const txt = encodeURIComponent(document.getElementById('textoMensagem').value);
-            let num = document.getElementById('edTelefone').value.replace(/\D/g, '');
-            if(num.length >= 10) window.open(`https://wa.me/55${num}?text=${txt}`, '_blank');
+        // ==========================================
+        // 5. IMPORTAÇÃO (RESTAURADA)
+        // ==========================================
+        async function processarPlanilha() {
+            const fileInput = document.getElementById('arquivoExcel'); const status = document.getElementById('statusImportacao'); const btn = document.getElementById('btnImportar');
+            if(!fileInput.files[0]) return alert("Selecione o arquivo primeiro!");
+            btn.disabled = true; btn.textContent = "Lendo arquivo..."; status.classList.remove('hidden'); status.innerHTML = "⏳ Lendo dados da planilha...";
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const data = e.target.result; const workbook = XLSX.read(data, {type: 'binary'});
+                    const sheetName = workbook.SheetNames.includes("OLX - Todos os bairros") ? "OLX - Todos os bairros" : workbook.SheetNames[0];
+                    const sheet = workbook.Sheets[sheetName]; const json = XLSX.utils.sheet_to_json(sheet, {header: 1});
+                    status.innerHTML += `<br>✅ Lendo a aba: <strong>${sheetName}</strong>`;
+                    let headerIdx = -1; for(let i = 0; i < json.length; i++) { if(json[i] && json[i].includes("Bairro") && json[i].includes("Título do Anúncio")) { headerIdx = i; break; } }
+                    if(headerIdx === -1) throw new Error("Não encontrei as colunas padrão.");
+                    const headers = json[headerIdx]; const rows = json.slice(headerIdx + 1); const captacoesFormatadas = []; const limpaNum = (val) => val ? parseFloat(String(val).replace('R$','').replace(/\./g, '').replace(',', '.').trim()) : null;
+                    for(let r of rows) {
+                        if(!r[headers.indexOf('Bairro')]) continue; let endereco = r[headers.indexOf('Endereço Completo (anúncio)')]; let telExtraido = r[headers.indexOf('Tem Telefone?')] === 'Sim' ? (r[headers.indexOf('Telefone Extraído')] || 'Sem telefone na planilha') : 'Não coletado';
+                        captacoesFormatadas.push({
+                            bairro: r[headers.indexOf('Bairro')], rua: endereco ? endereco : 'A verificar - Imóvel Importado', numero: 'S/N', tipo_imovel: 'olx', categoria: 'Proprietário', origem: 'planilha', status_funil: 'não contatado', captador_id: usuarioId, subtipo: r[headers.indexOf('Tipo')] || null, area: limpaNum(r[headers.indexOf('Área (m²)')]), quartos: parseInt(r[headers.indexOf('Quartos')]) || null, banheiros: parseInt(r[headers.indexOf('Banheiros')]) || null, vagas: parseInt(r[headers.indexOf('Vagas')]) || null, preco: limpaNum(r[headers.indexOf('Preço (R$)')]), condominio: limpaNum(r[headers.indexOf('Condomínio (R$)')]), iptu: limpaNum(r[headers.indexOf('IPTU (R$)')]), nome: 'Contato via Planilha', telefones: [String(telExtraido)], link_anuncio: r[headers.indexOf('Link do Anúncio')] || null, observacoes: `Título: ${r[headers.indexOf('Título do Anúncio')] || ''}`
+                        });
+                    }
+                    status.innerHTML += `<br>⏳ Cadastrando ${captacoesFormatadas.length} imóveis no banco (Pode demorar uns 20 segundos)...`;
+                    const { error } = await supabaseClient.from('captacoes').insert(captacoesFormatadas);
+                    if(error) throw error;
+                    status.innerHTML += `<br>🎉 <strong>SUCESSO!</strong> Importação finalizada.`; status.classList.replace('bg-gray-100', 'bg-green-100'); btn.textContent = "Processo Concluído!"; captacoesGlobais = []; 
+                } catch(err) { status.innerHTML += `<br>❌ <strong>ERRO:</strong> ${err.message}`; status.classList.replace('bg-gray-100', 'bg-red-100'); btn.textContent = "Erro"; btn.disabled = false; }
+            };
+            reader.readAsBinaryString(fileInput.files[0]);
         }
     </script>
 </body>
