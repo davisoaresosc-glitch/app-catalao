@@ -25,7 +25,7 @@
     <!-- SISTEMA LOGADO -->
     <div id="sistemaArea" class="hidden flex flex-col h-screen">
         <!-- Navegação Topo -->
-        <div class="bg-blue-900 text-white p-4 shadow-md flex justify-between items-center">
+        <div class="bg-blue-900 text-white p-4 shadow-md flex justify-between items-center flex-wrap gap-2">
             <h1 class="text-xl font-bold">Catalão CRM</h1>
             <div class="space-x-2">
                 <button onclick="mostrarAba('captacao')" class="bg-blue-700 px-3 py-1 rounded hover:bg-blue-600 text-sm">Nova Captação</button>
@@ -39,10 +39,11 @@
                 <h2 class="text-xl font-bold mb-4">Nova Captação</h2>
                 <form id="captacaoForm" class="space-y-3">
                     <div class="flex space-x-2">
-                        <input type="text" id="rua" placeholder="Rua" required class="w-2/3 px-3 py-2 border rounded-lg">
-                        <input type="text" id="numero" placeholder="Nº" required class="w-1/3 px-3 py-2 border rounded-lg">
+                        <input type="text" id="rua" placeholder="Rua" required class="w-2/3 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <input type="text" id="numero" placeholder="Nº" required class="w-1/3 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
                     </div>
-                    <input type="text" id="bairro" placeholder="Bairro" required class="w-full px-3 py-2 border rounded-lg">
+                    <input type="text" id="bairro" placeholder="Bairro" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                    
                     <div class="flex space-x-2">
                         <select id="tipo_imovel" class="w-1/2 px-3 py-2 border rounded-lg bg-white">
                             <option value="placa">Placa</option>
@@ -54,22 +55,51 @@
                             <option value="Obra/Construtora">Construtora</option>
                         </select>
                     </div>
-                    <input type="text" id="nome" placeholder="Nome do Proprietário/Empresa" required class="w-full px-3 py-2 border rounded-lg">
-                    <input type="text" id="telefone" placeholder="Telefone" class="w-full px-3 py-2 border rounded-lg bg-blue-50">
-                    <div class="pt-2">
-                        <label class="block text-sm font-medium mb-1">Fotos da Captação</label>
-                        <input type="file" id="fotos" accept="image/*" multiple capture="environment" class="w-full border p-2 rounded-lg bg-gray-50">
+
+                    <div class="flex space-x-2">
+                        <select id="origem" class="w-1/3 px-3 py-2 border rounded-lg bg-white text-sm">
+                            <option value="campo">Campo</option>
+                            <option value="olx">OLX</option>
+                            <option value="indicacao">Indicação</option>
+                            <option value="outro">Outro</option>
+                        </select>
+                        <input type="text" id="nome" placeholder="Nome do Dono/Empresa" required class="w-2/3 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
                     </div>
-                    <button type="submit" id="btnSalvar" class="w-full bg-green-600 text-white font-bold py-3 rounded-lg mt-4">Salvar Captação</button>
+
+                    <input type="text" id="telefone" placeholder="Telefone (Corretor não vê)" class="w-full px-3 py-2 border rounded-lg bg-blue-50">
+                    
+                    <textarea id="observacoes" placeholder="Observações (ex: Falar com porteiro João)" class="w-full px-3 py-2 border rounded-lg text-sm" rows="2"></textarea>
+                    
+                    <div class="pt-2">
+                        <label class="block text-sm font-medium mb-1">Fotos (Opcional por enquanto)</label>
+                        <input type="file" id="fotos" accept="image/*" multiple capture="environment" class="w-full border p-2 rounded-lg bg-gray-50 text-sm">
+                    </div>
+
+                    <div class="flex items-center mt-2 mb-2">
+                        <input type="checkbox" id="manter_endereco" class="mr-2 h-4 w-4 text-blue-600">
+                        <label for="manter_endereco" class="text-sm text-gray-700">Continuar na mesma rua/bairro após salvar</label>
+                    </div>
+
+                    <button type="submit" id="btnSalvar" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg shadow transition">Salvar Captação</button>
                 </form>
                 <div id="msgCaptacao" class="mt-4 text-sm font-semibold hidden text-center"></div>
             </div>
         </div>
 
         <!-- ABA 2: FUNIL KANBAN -->
-        <div id="abaFunil" class="hidden p-4 flex-1 overflow-x-auto bg-gray-200">
-            <div id="kanbanBoard" class="flex space-x-4 h-full pb-4" style="min-width: max-content;">
-                <!-- Colunas serão geradas pelo JavaScript -->
+        <div id="abaFunil" class="hidden p-4 flex-1 flex flex-col bg-gray-200 overflow-hidden">
+            
+            <!-- Barra de Busca e Exportação -->
+            <div class="mb-4 flex gap-2 w-full overflow-x-auto pb-2">
+                <input type="text" id="buscaKanban" oninput="carregarFunil()" placeholder="Buscar rua, nome ou obs..." class="flex-1 min-w-[200px] px-4 py-2 border rounded-lg shadow-sm">
+                <button onclick="exportarExcel()" class="bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-2 rounded-lg shadow flex-shrink-0">
+                    📥 Exportar CSV
+                </button>
+            </div>
+
+            <!-- Quadro Kanban -->
+            <div id="kanbanBoard" class="flex space-x-4 flex-1 overflow-x-auto overflow-y-hidden pb-4" style="min-width: max-content;">
+                <!-- Colunas carregam aqui -->
             </div>
         </div>
     </div>
@@ -79,10 +109,10 @@
         const supabaseKey = 'sb_publishable_6Yh1LhK4Zi7v9wqQM1a8cA_UhH-CCQW';
         const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
         let usuarioId = null;
+        let captacoesGlobais = []; // Guarda os dados para busca e excel
 
         const statusLista = ['não contatado', 'contatado', 'respondeu', 'qualificado', 'visita agendada', 'autorização assinada', 'cadastrado'];
 
-        // Trocar de abas
         function mostrarAba(aba) {
             document.getElementById('abaCaptacao').classList.add('hidden');
             document.getElementById('abaFunil').classList.add('hidden');
@@ -90,7 +120,6 @@
             if(aba === 'funil') document.getElementById('abaFunil').classList.remove('hidden');
         }
 
-        // Login
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             document.getElementById('mensagem').classList.remove('hidden');
@@ -111,11 +140,11 @@
             }
         });
 
-        // Salvar Captação
+        // SALVAR CAPTAÇÃO
         document.getElementById('captacaoForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btnSalvar');
-            btn.textContent = 'Enviando...'; btn.disabled = true;
+            btn.textContent = 'Salvando...'; btn.disabled = true;
 
             try {
                 const arquivos = document.getElementById('fotos').files;
@@ -134,14 +163,28 @@
                     categoria: document.getElementById('categoria').value,
                     nome: document.getElementById('nome').value,
                     telefones: [document.getElementById('telefone').value],
-                    origem: 'campo',
+                    origem: document.getElementById('origem').value,
+                    observacoes: document.getElementById('observacoes').value,
                     fotos: linksFotos,
                     captador_id: usuarioId
                 }]);
 
-                document.getElementById('msgCaptacao').textContent = '✅ Salvo!';
+                document.getElementById('msgCaptacao').textContent = '✅ Salvo com sucesso!';
                 document.getElementById('msgCaptacao').className = 'mt-4 text-green-600 block text-center';
-                document.getElementById('captacaoForm').reset();
+                
+                // Lógica de limpar ou manter endereço
+                if(document.getElementById('manter_endereco').checked) {
+                    const rua = document.getElementById('rua').value;
+                    const bairro = document.getElementById('bairro').value;
+                    document.getElementById('captacaoForm').reset();
+                    document.getElementById('rua').value = rua;
+                    document.getElementById('bairro').value = bairro;
+                    document.getElementById('manter_endereco').checked = true;
+                } else {
+                    document.getElementById('captacaoForm').reset();
+                }
+                
+                setTimeout(() => { document.getElementById('msgCaptacao').classList.add('hidden'); }, 3000);
             } catch(err) {
                 alert("Erro ao salvar.");
             } finally {
@@ -149,41 +192,53 @@
             }
         });
 
-        // Carregar Kanban
+        // CARREGAR FUNIL COM BUSCA
         async function carregarFunil() {
             const board = document.getElementById('kanbanBoard');
-            board.innerHTML = '<p class="p-4">Carregando captações...</p>';
+            const termoBusca = document.getElementById('buscaKanban').value.toLowerCase();
+            
+            // Só busca no banco de novo se não tiver dados ou for a primeira vez
+            if(captacoesGlobais.length === 0 || termoBusca === "") {
+                const { data, error } = await supabaseClient.from('captacoes_vitrine').select('*').order('data_mapeamento', { ascending: false });
+                if (error) return;
+                captacoesGlobais = data;
+            }
 
-            // Puxa da vitrine blindada!
-            const { data: captacoes, error } = await supabaseClient.from('captacoes_vitrine').select('*').order('data_mapeamento', { ascending: false });
-            if (error) return board.innerHTML = '<p>Erro ao carregar dados.</p>';
+            // Aplica o filtro da busca
+            const captacoesFiltradas = captacoesGlobais.filter(c => 
+                (c.rua && c.rua.toLowerCase().includes(termoBusca)) || 
+                (c.nome && c.nome.toLowerCase().includes(termoBusca)) ||
+                (c.observacoes && c.observacoes.toLowerCase().includes(termoBusca))
+            );
 
             board.innerHTML = '';
             
-            // Cria colunas
             statusLista.forEach(status => {
-                const itensColuna = captacoes.filter(c => c.status_funil === status);
+                const itens = captacoesFiltradas.filter(c => c.status_funil === status);
                 
-                let htmlColuna = `
+                let html = `
                     <div class="bg-gray-100 rounded-lg shadow w-72 flex-shrink-0 flex flex-col max-h-full">
                         <div class="p-3 border-b border-gray-200 bg-gray-50 rounded-t-lg font-bold text-gray-700 capitalize flex justify-between">
-                            ${status} <span class="bg-gray-200 text-xs py-1 px-2 rounded-full">${itensColuna.length}</span>
+                            ${status} <span class="bg-gray-200 text-xs py-1 px-2 rounded-full">${itens.length}</span>
                         </div>
                         <div class="p-2 overflow-y-auto flex-1 space-y-3">
                 `;
 
-                itensColuna.forEach(item => {
+                itens.forEach(item => {
                     const fotoHtml = item.fotos && item.fotos.length > 0 ? `<img src="${item.fotos[0]}" class="w-full h-32 object-cover rounded mb-2">` : '';
+                    const obsHtml = item.observacoes ? `<p class="text-xs text-gray-500 italic mt-1 bg-yellow-50 p-1 rounded">"${item.observacoes}"</p>` : '';
                     
-                    htmlColuna += `
+                    html += `
                         <div class="bg-white p-3 rounded shadow-sm border border-gray-200 text-sm">
                             ${fotoHtml}
                             <p class="font-bold truncate">${item.rua}, ${item.numero}</p>
                             <p class="text-xs text-gray-500 mb-2">${item.bairro} - ${item.tipo_imovel}</p>
                             <p class="font-semibold text-blue-800">👤 ${item.nome}</p>
-                            <p class="text-gray-600 mb-3">📞 ${item.telefones[0] || 'Sem telefone'}</p>
+                            <p class="text-gray-600 mb-2">📞 ${item.telefones[0] || 'Sem telefone'}</p>
+                            <div class="text-xs text-gray-400 mb-2">Origem: ${item.origem}</div>
+                            ${obsHtml}
                             
-                            <select onchange="mudarStatus('${item.id}', this.value)" class="w-full text-xs p-1 border rounded bg-gray-50">
+                            <select onchange="mudarStatus('${item.id}', this.value)" class="w-full text-xs p-1 border rounded bg-gray-50 mt-2">
                                 <option value="" disabled selected>Mover para...</option>
                                 ${statusLista.map(s => `<option value="${s}">${s}</option>`).join('')}
                             </select>
@@ -191,15 +246,40 @@
                     `;
                 });
 
-                htmlColuna += `</div></div>`;
-                board.innerHTML += htmlColuna;
+                html += `</div></div>`;
+                board.innerHTML += html;
             });
         }
 
-        // Mudar Status no Banco
         async function mudarStatus(id, novoStatus) {
             await supabaseClient.from('captacoes').update({ status_funil: novoStatus }).eq('id', id);
-            carregarFunil(); // Recarrega o quadro
+            // Zera a lista global pra forçar uma busca nova e atualizada no banco
+            captacoesGlobais = [];
+            carregarFunil(); 
+        }
+
+        // EXPORTAR EXCEL (CSV)
+        function exportarExcel() {
+            if(captacoesGlobais.length === 0) return alert("Nenhum dado para exportar.");
+            
+            let csv = 'Data,Origem,Rua,Numero,Bairro,Tipo,Nome,Telefone,Status,Observacoes\n';
+            captacoesGlobais.forEach(c => {
+                const dataFormatada = new Date(c.data_mapeamento).toLocaleDateString('pt-BR');
+                const tels = c.telefones ? c.telefones.join(' / ') : '';
+                // Limpa quebras de linha das observações pra não bugar o excel
+                const obs = c.observacoes ? c.observacoes.replace(/(\r\n|\n|\r)/gm, " ") : ''; 
+                
+                csv += `"${dataFormatada}","${c.origem}","${c.rua}","${c.numero}","${c.bairro}","${c.tipo_imovel}","${c.nome}","${tels}","${c.status_funil}","${obs}"\n`;
+            });
+            
+            const blob = new Blob(["\uFEFF"+csv], { type: 'text/csv;charset=utf-8;' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'captacoes_catalao.csv');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
     </script>
 </body>
